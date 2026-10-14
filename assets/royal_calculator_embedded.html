@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="he" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Royal Calculator — Professional Smart V6</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent}
+body{display:grid;place-items:center;font-family:Arial,sans-serif}
+#calculator{position:relative;width:min(96vw,1500px);aspect-ratio:1672/941;user-select:none;-webkit-user-select:none}
+#approvedSkin{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+#calculator.is-closed{display:none!important}
+
+/* Only the live mathematical display covers the baked example expression. */
+#display{position:absolute;left:22.35%;top:11.8%;width:68.7%;height:11.6%;z-index:6;display:flex;align-items:center;padding:0 1.35%;overflow:hidden;border-radius:8px;background:linear-gradient(90deg,rgba(244,250,255,.995),rgba(239,246,255,.995) 52%,rgba(243,244,255,.995));box-shadow:inset 0 0 18px rgba(84,151,255,.07);font:500 clamp(23px,3vw,46px)/1.02 Georgia,'Times New Roman',serif;color:#111741;white-space:nowrap}
+#displayText{display:inline-flex;align-items:center;min-width:0;max-width:100%;height:100%;gap:.02em}
+.caret{display:inline-block;flex:0 0 auto;width:3px;height:1.12em;margin:0 .035em;background:#176dff;box-shadow:0 0 7px #38d9ff;animation:blink 1s steps(1,end) infinite;vertical-align:middle}
+@keyframes blink{0%,48%{opacity:1}49%,100%{opacity:.08}}
+
+/* True 2-D math. No cyan slot boxes. */
+.math-frac{display:inline-grid;grid-template-rows:auto 2px auto;align-items:center;justify-items:stretch;vertical-align:middle;min-width:1.05em;margin:0 .08em;font-size:.68em;line-height:1}
+.math-frac .num,.math-frac .den{display:flex;align-items:center;justify-content:center;min-width:1.05em;min-height:1.02em;padding:0 .10em;white-space:nowrap}
+.math-frac .bar{display:block;width:100%;height:2px;background:#111741;border-radius:2px}
+.math-empty{display:inline-block;min-width:.36em;min-height:.72em}
+.math-root{display:inline-flex;align-items:flex-start;vertical-align:middle}
+.math-root>.radical{font-size:1.08em;line-height:1}
+.math-root>.radicand{border-top:1.7px solid currentColor;padding:.03em .08em 0 .05em;line-height:1}
+.math-abs{display:inline-flex;align-items:center}
+.math-abs::before,.math-abs::after{content:'|';font-weight:600}
+#display sup{font-size:.62em;line-height:1;align-self:flex-start;margin-top:.08em}
+#display sup.power-sup{display:inline-flex;align-items:flex-start;margin-left:.03em}
+#display .power-box{display:inline-flex;align-items:center;justify-content:center;min-width:.78em;min-height:.84em;padding:0 .14em;border:1.6px solid currentColor;border-radius:4px;box-sizing:border-box;line-height:1;background:rgba(255,255,255,.18)}
+#display .power-box .math-empty{min-width:.34em;min-height:.34em}
+
+/* INVISIBLE hit regions only. They never redraw/crop/cover a printed button. */
+.hit{position:absolute;z-index:12;padding:0;margin:0;border:0;background:transparent!important;box-shadow:none!important;outline:0!important;color:transparent;cursor:pointer;border-radius:10px;-webkit-tap-highlight-color:transparent}
+.hit::before,.hit::after{display:none!important;content:none!important}
+.hit:active,.hit:focus,.hit:focus-visible,.hit:hover{background:transparent!important;box-shadow:none!important;outline:0!important;filter:none!important;transform:none!important}
+
+/* f opens ADDITIONAL real function keys only in the already-empty middle strip. */
+#functionTray{position:absolute;left:40.7%;top:39.55%;width:25.2%;height:9.2%;z-index:14;display:none;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:3px;padding:2px;background:transparent}
+#functionTray.open{display:grid}
+.fn-key{min-width:0;min-height:0;padding:0 2px;border:1.4px solid #d9ad50;border-radius:8px;background:linear-gradient(180deg,#252d55,#141a38);color:#fff7df;font:700 clamp(9px,1.02vw,17px)/1 Georgia,'Times New Roman',serif;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);cursor:pointer}
+.fn-key.ivory{background:linear-gradient(180deg,#fffef8,#e8e3d4);color:#11183f}
+.fn-key.purple{background:linear-gradient(180deg,#7550cf,#482497);color:#fff}
+.fn-key.danger{background:linear-gradient(180deg,#ac264a,#71162f);color:#fff8e5}
+.fn-key:active{filter:brightness(.94)}
+
+@media(max-width:800px){#calculator{width:100vw}#display{font-size:clamp(19px,4vw,34px)}#functionTray{gap:2px}.fn-key{font-size:clamp(8px,2.1vw,14px)}}
+
+
+/* Typography-only: an entered exponent is always a genuinely raised, smaller figure. */
+#display sup,#display sup.power-sup{position:relative!important;top:-.42em!important;transform:none!important;align-self:center!important;margin-top:0!important;font-size:.62em!important;line-height:1!important;vertical-align:super!important}
+#display sup .math-power{display:inline!important;background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;line-height:1!important}
+#display sup .power-box{font-size:.96em!important}
+
+</style>
+</head>
+<body>
+<div id="calculator" aria-label="Royal function calculator">
+  <img id="approvedSkin" alt="Royal calculator">
+  <div id="display" aria-live="polite"><span id="displayText"></span></div>
+  <div id="functionTray" aria-label="Function keys">
+    <button type="button" class="fn-key purple" data-fn="pi">π</button>
+    <button type="button" class="fn-key purple" data-fn="e">e</button>
+    <button type="button" class="fn-key ivory" data-fn="sqrt">√</button>
+    <button type="button" class="fn-key ivory" data-fn="abs">|x|</button>
+    <button type="button" class="fn-key ivory" data-fn="power">xⁿ</button>
+    <button type="button" class="fn-key" data-fn="backspace">⌫</button>
+    <button type="button" class="fn-key" data-fn="sin">sin</button>
+    <button type="button" class="fn-key" data-fn="cos">cos</button>
+    <button type="button" class="fn-key" data-fn="tan">tan</button>
+    <button type="button" class="fn-key" data-fn="ln">ln</button>
+    <button type="button" class="fn-key" data-fn="log">log</button>
+    <button type="button" class="fn-key ivory" data-fn="cbrt">∛</button>
+  </div>
+</div>
+<script>
+(() => {
+  const SKIN_MAIN='royal_calculator_main.png';
+  const SKIN_FUNC='royal_calculator_functions.png';
+  
+  const calc=document.getElementById('calculator');
+  const skin=document.getElementById('approvedSkin');
+  const out=document.getElementById('displayText');
+  const tray=document.getElementById('functionTray');
+  const mainAC=document.getElementById('mainAC');
+  skin.src=SKIN_MAIN;
+  mainAC?.addEventListener('click',clearAll);
+
+  /* Exact invisible click regions. Nothing is visually drawn over the approved artwork. */
+  const buttons=[
+    ['x','quick','x',3.7,26.2,13.7,11.7],['square','quick','square',18.3,26.2,12.5,11.7],['fraction','quick','frac',31.5,26.2,12.7,11.7],['square root','quick','sqrt',45.0,26.2,13.2,11.7],['power','quick','power',59.0,26.2,12.4,11.7],['absolute value','quick','abs',72.1,26.2,12.0,11.7],['AC','nav','clear',84.6,26.2,11.8,11.7],
+    ['123','page','main',4.0,39.5,20.2,8.9],['functions','page','func',24.5,39.5,15.8,8.9],['degrees','unit','deg',78.0,40.2,8.8,7.0],['radians','unit','rad',87.1,40.2,9.3,7.0],
+    ['7','key','7',6.1,51.1,13.1,8.0],['8','key','8',20.1,51.1,12.7,8.0],['9','key','9',33.7,51.1,12.8,8.0],['open parenthesis','paren','open',47.3,51.1,12.0,8.0],['close parenthesis','paren','close',60.3,51.1,11.3,8.0],
+    ['4','key','4',6.1,60.2,13.1,8.0],['5','key','5',20.1,60.2,12.7,8.0],['6','key','6',33.7,60.2,12.8,8.0],['multiply','key','*',47.3,60.2,12.0,8.0],['divide','key','/',60.3,60.2,11.3,8.0],
+    ['1','key','1',6.1,69.3,13.1,8.0],['2','key','2',20.1,69.3,12.7,8.0],['3','key','3',33.7,69.3,12.8,8.0],['minus','key','-',47.3,69.3,12.0,8.0],['plus','key','+',60.3,69.3,11.3,8.0],
+    ['0','key','0',6.2,79.3,15.9,8.2],['decimal point','key','.',22.5,79.3,10.6,8.2],['backspace','nav','backspace',33.6,79.3,12.9,8.2],['confirm','nav','confirm',47.1,79.3,24.0,8.2],
+    ['cursor up','nav','up',81.4,54.1,6.3,9.6],['cursor left','nav','left',74.9,63.6,6.3,10.8],['cursor right','nav','right',88.0,63.6,6.3,10.8],['cursor down','nav','down',81.4,74.2,6.3,10.8]
+  ];
+  for(const [label,act,val,x,y,w,h] of buttons){
+    const b=document.createElement('button');
+    b.type='button'; b.className='hit'; b.setAttribute('aria-label',label); b.dataset.act=act; b.dataset.val=val;
+    Object.assign(b.style,{left:x+'%',top:y+'%',width:w+'%',height:h+'%'});
+    calc.appendChild(b);
+  }
+
+  let value='',cursor=0,unit='deg',funcOpen=false;
+
+  function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+  function findClose(s,openIndex){
+    let d=0;
+    for(let i=openIndex;i<s.length;i++){ if(s[i]==='(')d++; else if(s[i]===')'){d--; if(d===0)return i} }
+    return -1;
+  }
+  function findComma(s,openIndex,closeIndex){
+    let d=0;
+    for(let i=openIndex+1;i<closeIndex;i++){ const c=s[i]; if(c==='(')d++; else if(c===')')d--; else if(c===','&&d===0)return i; }
+    return -1;
+  }
+  function caretHtml(){return '<span class="caret" aria-hidden="true"></span>'}
+
+  function topLevelCommaUntil(s,openIndex,end){
+    let d=0;
+    for(let i=openIndex+1;i<end;i++){
+      const c=s[i];
+      if(c==='(')d++;
+      else if(c===')'&&d>0)d--;
+      else if(c===','&&d===0)return i;
+    }
+    return -1;
+  }
+
+  function renderRange(start,end){
+    let html='',i=start;
+    const empty='<span class="math-empty">&nbsp;</span>';
+    while(i<end){
+      if(cursor===i)html+=caretHtml();
+
+      /* Fractions are always rendered as a 2-D fraction — even while their internal
+         structure is temporarily incomplete. The word "frac" can never reach the screen. */
+      if(value.startsWith('frac(',i)){
+        const open=i+4;
+        const foundClose=findClose(value,open);
+        const hasClose=foundClose>=0&&foundClose<end;
+        const limit=hasClose?foundClose:end;
+        let comma=hasClose?findComma(value,open,foundClose):topLevelCommaUntil(value,open,limit);
+        if(comma<0)comma=limit;
+        const n=renderRange(i+5,comma)||empty;
+        const dStart=comma<limit?comma+1:limit;
+        const d=renderRange(dStart,limit)||empty;
+        html+='<span class="math-frac"><span class="num">'+n+'</span><span class="bar"></span><span class="den">'+d+'</span></span>';
+        i=hasClose?foundClose+1:end;
+        continue;
+      }
+
+      /* Roots stay radicals at every editing stage; internal names never appear. */
+      if(value.startsWith('sqrt(',i)){
+        const open=i+4,foundClose=findClose(value,open),hasClose=foundClose>=0&&foundClose<end,limit=hasClose?foundClose:end;
+        const body=renderRange(i+5,limit)||empty;
+        html+='<span class="math-root"><span class="radical">√</span><span class="radicand">'+body+'</span></span>';
+        i=hasClose?foundClose+1:end;continue;
+      }
+      if(value.startsWith('cbrt(',i)){
+        const open=i+4,foundClose=findClose(value,open),hasClose=foundClose>=0&&foundClose<end,limit=hasClose?foundClose:end;
+        const body=renderRange(i+5,limit)||empty;
+        html+='<span class="math-root"><span class="radical">∛</span><span class="radicand">'+body+'</span></span>';
+        i=hasClose?foundClose+1:end;continue;
+      }
+      if(value.startsWith('abs(',i)){
+        const open=i+3,foundClose=findClose(value,open),hasClose=foundClose>=0&&foundClose<end,limit=hasClose?foundClose:end;
+        const body=renderRange(i+4,limit)||empty;
+        html+='<span class="math-abs">'+body+'</span>';
+        i=hasClose?foundClose+1:end;continue;
+      }
+
+      /* Absolute fail-safe: internal implementation names are never user-visible. */
+      if(value.startsWith('frac',i)){html+='▭⁄▭';i+=4;continue;}
+      if(value.startsWith('sqrt',i)){html+='√';i+=4;continue;}
+      if(value.startsWith('cbrt',i)){html+='∛';i+=4;continue;}
+      if(value.startsWith('abs',i)){html+='||';i+=3;continue;}
+      if(value.startsWith('square',i)){html+='<sup>2</sup>';i+=6;continue;}
+      if(value.startsWith('power',i)){html+='<sup>□</sup>';i+=5;continue;}
+
+      const fnMatch=/^(sin|cos|tan|ln|log)\(/.exec(value.slice(i));
+      if(fnMatch){
+        const name=fnMatch[1],open=i+name.length,foundClose=findClose(value,open),hasClose=foundClose>=0&&foundClose<end,limit=hasClose?foundClose:end;
+        const body=renderRange(open+1,limit)||empty;
+        html+=name+'('+body+(hasClose?')':'');
+        i=hasClose?foundClose+1:end;continue;
+      }
+      if(value.startsWith('pi',i)){html+='π';i+=2;continue;}
+      if(value.startsWith('^2',i)){html+='<sup>2</sup>';i+=2;continue;}
+      if(value.startsWith('^(',i)){
+        const open=i+1,foundClose=findClose(value,open),hasClose=foundClose>=0&&foundClose<end,limit=hasClose?foundClose:end;
+        const ex=renderRange(i+2,limit)||empty;
+        const exponentFilled=!!value.slice(i+2,limit).trim();
+        html+='<sup class="power-sup">'+(exponentFilled?'<span class="math-power">'+ex+'</span>':'<span class="power-box">'+ex+'</span>')+'</sup>';
+        i=hasClose?foundClose+1:end;continue;
+      }
+
+      const c=value[i];
+      html+=c==='*'?'·':c==='/'?'÷':c==='-'?'−':escapeHtml(c);
+      i++;
+    }
+    if(cursor===end)html+=caretHtml();
+    return html;
+  }
+
+  function render(){ out.innerHTML=renderRange(0,value.length); }
+  function stepOutOfExponent(){
+    // Leaving the superscript places the cursor after its closing parenthesis.
+    // No empty superscript insertion rectangle should remain on screen.
+    for(let i=value.length-3;i>=0;i--){
+      if(value.slice(i,i+2)!=='^(')continue;
+      const close=findClose(value,i+1);
+      if(close>=0&&cursor>i+1&&cursor<=close){
+        // Remove unfilled power placeholder rather than keeping an orphan square.
+        if(close===i+2){value=value.slice(0,i)+value.slice(close+1);cursor=i;}
+        else cursor=close+1;
+        render();return true;
+      }
+    }return false;
+  }
+
+  function atomRangeLeft(s,p){
+    if(p<=0)return null;
+    let i=p-1;
+    if(s[i]===')'){
+      let d=1;i--;
+      while(i>=0){if(s[i]===')')d++; else if(s[i]==='('&&--d===0)break; i--;}
+      if(i>=0){let j=i; while(j>0&&/[A-Za-z]/.test(s[j-1]))j--; return [j,p];}
+    }
+    while(i>=0&&/[A-Za-z0-9.]/.test(s[i]))i--;
+    if(i===p-1)return null;
+    let a=i+1;
+    if(a>0&&s[a-1]==='-'&&(a-1===0||/[+\-*/(,]/.test(s[a-2]||'')))a--;
+    return [a,p];
+  }
+
+  function insert(t){value=value.slice(0,cursor)+t+value.slice(cursor);cursor+=t.length;render()}
+  function clearAll(){value='';cursor=0;render()}
+  function backspace(){
+    if(cursor<=0)return;
+    /* Never expose internal structure names or destroy protected separators. */
+    const protectedOpen=['sqrt(','cbrt(','abs(','sin(','cos(','tan(','ln(','log('];
+    for(const token of protectedOpen){
+      const start=cursor-token.length;
+      if(start>=0 && value.slice(start,cursor)===token){
+        /* Empty/new structure: remove the whole wrapper when possible. */
+        if(value[cursor]===')') value=value.slice(0,start)+value.slice(cursor+1);
+        else value=value.slice(0,start)+value.slice(cursor);
+        cursor=start; render(); return;
+      }
+    }
+    /* In a fraction, backspace at denominator start moves back to numerator instead of deleting the comma. */
+    for(let i=0;i<value.length;i++){
+      if(!value.startsWith('frac(',i))continue;
+      const open=i+4, close=findClose(value,open), comma=close>=0?findComma(value,open,close):-1;
+      if(comma>=0 && cursor===comma+1){cursor=comma;render();return;}
+      if(cursor===i+5){
+        if(comma>=0&&close>=0&&comma===i+5&&close===comma+1){value=value.slice(0,i)+value.slice(close+1);cursor=i;render();return;}
+        cursor=i;render();return;
+      }
+    }
+    if(cursor>=2 && value.slice(cursor-2,cursor)==='^('){cursor-=2;render();return;}
+    value=value.slice(0,cursor-1)+value.slice(cursor);cursor--;cursor=nearestAllowed(cursor,-1);render();
+  }
+  function insertSquare(){const r=atomRangeLeft(value,cursor);if(!r)return;value=value.slice(0,r[1])+'^2'+value.slice(r[1]);cursor=r[1]+2;render()}
+  function insertPower(){const r=atomRangeLeft(value,cursor);if(!r)return;value=value.slice(0,cursor)+'^()'+value.slice(cursor);cursor+=2;render()}
+  function insertRoot(){value=value.slice(0,cursor)+'sqrt()'+value.slice(cursor);cursor+=5;render()}
+  function insertCubeRoot(){value=value.slice(0,cursor)+'cbrt()'+value.slice(cursor);cursor+=5;render()}
+  function insertAbs(){value=value.slice(0,cursor)+'abs()'+value.slice(cursor);cursor+=4;render()}
+  function insertFn(name){value=value.slice(0,cursor)+name+'()'+value.slice(cursor);cursor+=name.length+1;render()}
+  function insertOpenParen(){value=value.slice(0,cursor)+'()'+value.slice(cursor);cursor+=1;render()}
+  function insertCloseParen(){if(value[cursor]===')'){cursor++;render();return}insert(')')}
+
+  function deepestSlotStart(pos){
+    let best={start:0,span:Infinity};
+    for(let i=0;i<value.length;i++){
+      if(value.startsWith('frac(',i)){
+        const open=i+4,close=findClose(value,open),comma=close>=0?findComma(value,open,close):-1;
+        if(comma>=0&&close>=0){
+          const slots=[[i+5,comma],[comma+1,close]];
+          for(const [a,b] of slots) if(pos>=a&&pos<=b&&b-a<best.span) best={start:a,span:b-a};
+        }
+      }
+      for(const name of ['sqrt','cbrt','abs','sin','cos','tan','ln','log']){
+        if(value.startsWith(name+'(',i)){
+          const open=i+name.length,close=findClose(value,open);
+          if(close>=0){const a=open+1,b=close;if(pos>=a&&pos<=b&&b-a<best.span)best={start:a,span:b-a}}
+        }
+      }
+      if(value.startsWith('^(',i)){
+        const open=i+1,close=findClose(value,open);
+        if(close>=0){const a=i+2,b=close;if(pos>=a&&pos<=b&&b-a<best.span)best={start:a,span:b-a}}
+      }
+    }
+    return best.start;
+  }
+
+  /* Professional fraction behavior: wrap the complete expression in the current slot.
+     If the cursor is immediately after a binary operator, create a fresh empty fraction instead. */
+  function insertFraction(){
+    const slotStart=deepestSlotStart(cursor);
+    const left=value.slice(slotStart,cursor);
+    const trailingOp=/[+\-*/]$/.test(left);
+    if(left && !trailingOp){
+      value=value.slice(0,slotStart)+'frac('+left+',)'+value.slice(cursor);
+      cursor=slotStart+5+left.length+1; // denominator start
+    }else{
+      value=value.slice(0,cursor)+'frac(,)'+value.slice(cursor);
+      cursor+=5; // numerator start
+    }
+    render();
+  }
+
+  function allowedPositions(){
+    const ok=new Set(Array.from({length:value.length+1},(_,i)=>i));
+    const names=['frac','sqrt','cbrt','abs','sin','cos','tan','ln','log'];
+    for(let i=0;i<value.length;i++){
+      for(const name of names){
+        if(value.startsWith(name+'(',i)){
+          for(let k=1;k<=name.length;k++)ok.delete(i+k); // skip cursor inside hidden function name
+        }
+      }
+      if(value.startsWith('^(',i))ok.delete(i+1);
+      if(value.startsWith('^2',i))ok.delete(i+1);
+    }
+    return [...ok].sort((a,b)=>a-b);
+  }
+  function nearestAllowed(pos,dir){
+    const a=allowedPositions();
+    if(a.includes(pos))return pos;
+    if(dir>0){for(const p of a)if(p>pos)return p;return value.length}
+    for(let i=a.length-1;i>=0;i--)if(a[i]<pos)return a[i];return 0;
+  }
+  function moveCursor(dir){
+    const a=allowedPositions();
+    if(dir>0){for(const p of a)if(p>cursor){cursor=p;render();return}}
+    else{for(let i=a.length-1;i>=0;i--)if(a[i]<cursor){cursor=a[i];render();return}}
+  }
+
+  
+  function moveVertical(dir){
+    // Down from an exponent returns to the ordinary baseline.
+    if(dir>0 && stepOutOfExponent())return;
+    for(let i=0;i<value.length;i++){
+      if(!value.startsWith('frac(',i))continue;
+      const open=i+4, close=findClose(value,open), comma=close>=0?findComma(value,open,close):-1;
+      if(comma<0||close<0)continue;
+      const nStart=i+5,nEnd=comma,dStart=comma+1,dEnd=close;
+      if(dir>0 && cursor>=nStart && cursor<=nEnd){
+        const off=Math.max(0,cursor-nStart); cursor=Math.min(dStart+off,dEnd); render(); return;
+      }
+      if(dir<0 && cursor>=dStart && cursor<=dEnd){
+        const off=Math.max(0,cursor-dStart); cursor=Math.min(nStart+off,nEnd); render(); return;
+      }
+    }
+  }
+
+function confirmAndClose(){
+    if(window.parent!==window){
+      window.parent.postMessage({type:'mamlachat:royalcalc-confirm',expression:value,unit},'*');
+      return;
+    }
+    const ev=new CustomEvent('royalcalc:confirm',{detail:{expression:value,unit},cancelable:true});
+    document.dispatchEvent(ev);
+    if(!ev.defaultPrevented){
+      calc.classList.add('is-closed');
+      calc.setAttribute('aria-hidden','true');
+    }
+  }
+
+function setFuncOpen(on){
+    funcOpen=!!on;
+    tray.classList.toggle('open',funcOpen);
+    skin.src=funcOpen?SKIN_FUNC:SKIN_MAIN;
+  }
+
+  calc.addEventListener('click',e=>{
+    const b=e.target.closest('.hit'); if(!b)return;
+    const a=b.dataset.act,v=b.dataset.val;
+    if(a==='key')insert(v);
+    else if(a==='quick'){if(v==='x')insert('x');else if(v==='square')insertSquare();else if(v==='frac')insertFraction();else if(v==='sqrt')insertRoot();else if(v==='power')insertPower();else if(v==='abs')insertAbs();}
+    else if(a==='paren'){if(v==='open')insertOpenParen();else insertCloseParen();}
+    else if(a==='nav'){
+      if(v==='backspace')backspace();
+      else if(v==='clear')clearAll();
+      else if(v==='left')moveCursor(-1);
+      else if(v==='right')moveCursor(1);
+      else if(v==='up'||v==='down')moveVertical(v==='up'?-1:1)
+      else if(v==='confirm')confirmAndClose();
+    }
+    else if(a==='unit')unit=v;
+    else if(a==='page'){if(v==='func')setFuncOpen(!funcOpen);else setFuncOpen(false)}
+  });
+
+  tray.addEventListener('click',e=>{
+    const b=e.target.closest('.fn-key');if(!b)return;
+    const v=b.dataset.fn;
+    if(v==='pi')insert('pi'); else if(v==='e')insert('e'); else if(v==='sqrt')insertRoot(); else if(v==='abs')insertAbs(); else if(v==='power')insertPower();
+    else if(v==='cbrt')insertCubeRoot();
+    else if(v==='sin'||v==='cos'||v==='tan'||v==='ln'||v==='log')insertFn(v);
+    else if(v==='backspace')backspace();
+  });
+
+  document.addEventListener('keydown',e=>{
+    if(e.ctrlKey||e.metaKey)return;
+    const k=e.key;
+    if(/^[0-9.]$/.test(k)){insert(k);e.preventDefault();return}
+    if(k==='x'||k==='X'){insert('x');e.preventDefault();return}
+    if(k==='e'||k==='E'){insert('e');e.preventDefault();return}
+    if(k==='p'||k==='P'){insert('pi');e.preventDefault();return}
+    if(k==='+'||k==='-'){insert(k);e.preventDefault();return}
+    if(k==='*'){insert('*');e.preventDefault();return}
+    if(k==='/'){insertFraction();e.preventDefault();return}
+    if(k==='^'){insertPower();e.preventDefault();return}
+    if(k==='('){insertOpenParen();e.preventDefault();return}
+    if(k===')'){insertCloseParen();e.preventDefault();return}
+    if(k==='|'){insertAbs();e.preventDefault();return}
+    if(k==='r'||(e.altKey&&(k==='v'||k==='V'))){insertRoot();e.preventDefault();return}
+    if(k==='s'||k==='S'){insertFn('sin');e.preventDefault();return}
+    if(k==='c'||k==='C'){insertFn('cos');e.preventDefault();return}
+    if(k==='t'||k==='T'){insertFn('tan');e.preventDefault();return}
+    if(k==='l'||k==='L'){insertFn('ln');e.preventDefault();return}
+    if(k==='g'||k==='G'){insertFn('log');e.preventDefault();return}
+    if(k==='Backspace'){backspace();e.preventDefault();return}
+    if(k==='Delete'){clearAll();e.preventDefault();return}
+    if(k==='ArrowLeft'){moveCursor(-1);e.preventDefault();return}
+    if(k==='ArrowRight'){moveCursor(1);e.preventDefault();return}
+    if(k==='ArrowUp'){moveVertical(-1);e.preventDefault();return}
+    if(k==='ArrowDown'){moveVertical(1);e.preventDefault();return}
+    if(k==='Enter'){if(!stepOutOfExponent())confirmAndClose();e.preventDefault();return}
+    if(k==='Tab'&&stepOutOfExponent()){e.preventDefault();return}
+    if(k==='Escape'){clearAll();e.preventDefault();return}
+  });
+
+  window.RoyalCalculator={
+    get value(){return value},
+    setValue(v){value=String(v??'');cursor=value.length;render()},
+    clear:clearAll,
+    open(){calc.classList.remove('is-closed');calc.setAttribute('aria-hidden','false')},
+    close(){calc.classList.add('is-closed');calc.setAttribute('aria-hidden','true')},
+    confirm:confirmAndClose,
+    get unit(){return unit},
+    set unit(v){if(v==='deg'||v==='rad')unit=v}
+  };
+  window.addEventListener('message',event=>{
+    if(event.source!==window.parent || !event.data || event.data.type!=='mamlachat:royalcalc-open')return;
+    RoyalCalculator.setValue(event.data.expression||'');
+    RoyalCalculator.unit=event.data.unit==='rad'?'rad':'deg';
+    RoyalCalculator.open();
+     document.body.tabIndex=-1;document.body.focus({preventScroll:true});
+  });
+  render();
+})();
+</script>
+</body>
+</html>

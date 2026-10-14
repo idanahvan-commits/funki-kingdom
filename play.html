@@ -1,0 +1,815 @@
+<!doctype html>
+<!DOCTYPE html>
+
+<html dir="rtl" lang="he">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" name="viewport"/>
+<title>ממלכת הפונקציה</title>
+<link rel="preload" href="assets/background.png" as="image" fetchpriority="high"/>
+<!-- Fresh launch rule: a new opening of PLAY starts with no previous function.
+     Returning from an actively chosen function in axes/composition keeps that function. -->
+<script id="mamlachat-fresh-entry-reset-v1">
+(function(){
+  'use strict';
+  var query = new URLSearchParams(window.location.search);
+  var returnOrigin = query.get('fromKingdom');
+  var hasValidReturn = (returnOrigin === 'axes' || returnOrigin === 'composition' || query.get('connect') === '1')
+    && !!query.get('f');
+  if(hasValidReturn) return;
+  // Only function data. Calculator position/scale and learning preferences remain untouched.
+  [
+    'mamlachat.functionHub.v1',
+    'mamlachat.functionRide.function.v1',
+    'mamlachat.functionMaster.state.v1',
+    'MAMLECHET_FUNCTION_SHARED_V1'
+  ].forEach(function(key){ try { localStorage.removeItem(key); } catch(_e) {} });
+})();
+</script>
+
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05020b;font-family:Arial,sans-serif}
+*{box-sizing:border-box}
+#scene{position:fixed;inset:0;overflow:hidden;background:#05020b}
+#stage{position:absolute;width:2048px;height:1536px;left:50%;top:50%;transform-origin:0 0;overflow:hidden;user-select:none;-webkit-user-select:none}
+.obj{position:absolute;display:block;pointer-events:none}.obj img{width:100%;height:100%;display:block;object-fit:contain;pointer-events:none;-webkit-user-drag:none}
+#background{left:0;top:0;width:2048px;height:1536px;z-index:0}#background img{object-fit:fill;filter:brightness(70%)}
+#ambientCanvas{position:absolute;inset:0;width:2048px;height:1536px;z-index:1;pointer-events:none}
+#axes{left:491px;top:433px;width:331px;height:207px;z-index:34;filter:brightness(43%)}
+#table{left:822px;top:424px;width:401px;height:251px;z-index:34;filter:brightness(43%)}
+#tableHit{position:absolute;left:822px;top:350px;width:401px;height:325px;z-index:60;pointer-events:auto;cursor:pointer;background:transparent}
+#bereshitHit{position:absolute;left:712px;top:99px;width:620px;height:251px;z-index:62;pointer-events:auto;cursor:pointer;background:transparent}
+#castle{left:1203px;top:406px;width:382px;height:239px;z-index:34;filter:brightness(43%)}
+#axes,#table,#castle{pointer-events:auto;cursor:pointer;transition:filter .24s ease,transform .24s ease;transform-origin:center}
+#bereshit{cursor:pointer;transition:filter .24s ease,transform .24s ease;transform-origin:center;pointer-events:none;isolation:isolate}
+#axes:hover,#table:hover,#castle:hover,#table.proxyHover{filter:brightness(100%) saturate(112%) drop-shadow(0 0 14px rgba(174,126,255,.52));transform:scale(1.015)}
+#bereshit img{position:relative;z-index:2}
+#bereshit::before{content:"";position:absolute;left:11%;right:11%;top:11%;bottom:15%;border-radius:50%;background:radial-gradient(circle at 50% 48%,rgba(255,248,236,.72) 0%,rgba(255,196,244,.42) 22%,rgba(164,132,255,.28) 46%,rgba(117,214,255,.18) 60%,rgba(0,0,0,0) 78%);filter:blur(22px);opacity:0;transform:scale(.88);transition:opacity .28s ease,transform .34s ease;pointer-events:none;z-index:1}
+#bereshit.proxyHover{filter:brightness(112%) saturate(116%) drop-shadow(0 0 18px rgba(255,240,250,.88)) drop-shadow(0 0 28px rgba(173,120,255,.58));transform:scale(1.018)}
+#bereshit.proxyHover::before{opacity:1;transform:scale(1.08)}
+#axes:active,#table:active,#castle:active,#table.proxyActive,#bereshit.proxyActive{transform:scale(1.006)}
+#scroll{left:290px;top:614px;width:1479px;height:330px;z-index:64;cursor:pointer;pointer-events:auto;transition:filter .25s ease,transform .25s ease;transform-origin:center}#scroll:hover{filter:brightness(109%) saturate(112%) drop-shadow(0 0 16px rgba(255,233,170,.45)) drop-shadow(0 0 26px rgba(170,124,255,.34));transform:scale(1.008)}#scroll:active{transform:scale(1.004)}#scroll.energizing{animation:scrollPulse 2.8s ease-in-out 1}@keyframes scrollPulse{0%,100%{filter:none}18%{filter:brightness(108%) drop-shadow(0 0 12px rgba(255,229,151,.55))}45%{filter:brightness(104%) drop-shadow(0 0 20px rgba(164,116,255,.48))}68%{filter:brightness(109%) drop-shadow(0 0 14px rgba(255,235,173,.5))}}
+#scroll iframe{position:absolute;inset:0;width:100%;height:100%;display:block;border:0;background:transparent;pointer-events:none}.scrollArrowHit{position:absolute;top:8%;width:17%;height:78%;z-index:8;border:0;background:transparent;padding:0;cursor:pointer;pointer-events:auto}#scrollPrev{left:0}#scrollNext{right:0}#scrollSnapshotCanvas{display:none!important}
+#bsd{left:1838px;top:-1px;width:117px;height:39px;z-index:60}
+#signature{left:26px;top:1474px;width:219px;height:66px;z-index:60}
+#bereshit{left:712px;top:99px;width:620px;height:465px;z-index:61}
+#title{left:612px;top:54px;width:664px;height:216px;z-index:63}
+.panel{position:absolute;overflow:hidden;filter:brightness(43%);transition:filter .9s ease;z-index:68}.panel.powered{filter:brightness(100%)}#carPanel.powered{cursor:pointer}
+#familyPanel{cursor:default;pointer-events:auto}#familyPanel.powered{cursor:pointer}#familyPanel.powered:hover{filter:brightness(115%) drop-shadow(0 0 12px rgba(255,233,176,.85)) drop-shadow(0 0 20px rgba(167,115,255,.55))}
+#familyPanel{left:391px;top:1025px;width:693px;height:390px;z-index:68}#carPanel{left:916px;top:986px;width:775px;height:435px;z-index:69}
+.panel>img{width:100%;height:100%;display:block;object-fit:fill;pointer-events:none}.panel canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.dial{position:absolute;aspect-ratio:1;z-index:74;cursor:pointer;touch-action:none;pointer-events:auto;transition:filter .22s ease,transform .22s ease;transform-origin:center}.dial:hover{filter:brightness(108%) saturate(113%) drop-shadow(0 0 12px rgba(255,234,178,.42)) drop-shadow(0 0 20px rgba(164,116,255,.34));transform:scale(1.022)}.dial:active{transform:scale(1.01)}.dial img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;-webkit-user-drag:none}.dial .needle{transform-origin:50% 50%;transition:transform .16s cubic-bezier(.2,.85,.2,1);z-index:2}.dial.dragging{filter:brightness(110%) saturate(115%) drop-shadow(0 0 12px rgba(255,236,190,.5)) drop-shadow(0 0 22px rgba(164,116,255,.38));transform:scale(1.016)}.dial.dragging .needle{transition:none}
+#mDial{left:652px;top:827px;width:314px;height:314px;z-index:72}#bDial{left:1104px;top:838px;width:278px;height:278px;z-index:74}
+/* HARD FUNCTION LOCK: while plug/socket are connecting or connected, function controls are physically disabled. */
+#stage.function-locked .dial,#stage.function-locked #scroll{pointer-events:none!important;cursor:default!important}
+#stage.function-locked .dial:hover,#stage.function-locked #scroll:hover{transform:none!important}
+
+.parDial{display:none;opacity:0;transform:scale(.97);transition:opacity .25s ease,transform .25s ease}.parabola .parDial{display:block;opacity:1;transform:scale(1)}.parabola #mDial,.parabola #bDial{display:none}.parabola .parDial:hover{transform:scale(1.022)}.parabola .parDial:active{transform:scale(1.01)}.parabola .parDial.dragging{transform:scale(1.016)}
+#aDial{left:608px;top:849px;width:255px;height:255px;z-index:78}#pbDial{left:897px;top:869px;width:244px;height:244px;z-index:78}#cDial{left:1234px;top:868px;width:234px;height:234px;z-index:78}
+.parabola #socket,.parabola #plug{z-index:84}.parabola #connector{z-index:90}
+.powerPart{position:absolute;z-index:75;cursor:pointer;pointer-events:auto;transition:transform .58s cubic-bezier(.25,.85,.25,1),filter .45s ease,opacity .22s ease}.powerPart img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}.powerPart:not(.ready){pointer-events:none}.powerPart.ready{pointer-events:auto;filter:brightness(100%) drop-shadow(0 0 12px rgba(255,224,140,.34))!important}.powerPart.ready:hover{filter:brightness(100%) drop-shadow(0 0 17px rgba(255,224,140,.48))!important}
+#socket{left:825px;top:1009px;width:187px;height:151px;z-index:73;filter:brightness(43%)}#plug{left:1008px;top:998px;width:218px;height:176px;z-index:75;filter:brightness(43%)}
+#socket.connecting{transform:translateX(44px);filter:brightness(100%)}#plug.connecting{transform:translateX(-44px);filter:brightness(100%)}
+.powerPart.hidden{opacity:0;pointer-events:none}
+#connector{position:absolute;left:840px;top:991px;width:354px;height:184px;z-index:88;display:none;cursor:pointer;pointer-events:auto;filter:brightness(100%) drop-shadow(0 0 10px rgba(255,225,135,.42));transition:filter .25s ease,transform .25s ease}#connector img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}#connector.energizing{animation:connectorPulse 3.35s cubic-bezier(.18,.78,.18,1) 1}@keyframes connectorPulse{0%,100%{transform:scale(1);filter:brightness(100%) drop-shadow(0 0 10px rgba(255,225,135,.42))}10%{transform:scale(1.018);filter:brightness(118%) drop-shadow(0 0 26px rgba(255,236,166,.92)) drop-shadow(0 0 42px rgba(180,128,255,.62))}28%{transform:scale(1.035);filter:brightness(128%) drop-shadow(0 0 44px rgba(255,244,190,.98)) drop-shadow(0 0 74px rgba(153,106,255,.78)) drop-shadow(0 0 90px rgba(108,214,255,.28))}54%{transform:scale(1.018);filter:brightness(114%) drop-shadow(0 0 28px rgba(255,235,174,.82)) drop-shadow(0 0 48px rgba(133,201,255,.38))}}#connector:hover{filter:brightness(100%) drop-shadow(0 0 16px rgba(255,225,135,.62));transform:scale(1.008)}
+#energyCanvas{position:absolute;inset:0;width:2048px;height:1536px;z-index:90;pointer-events:none}
+#triangleEnergyCanvas{position:absolute;inset:0;width:2048px;height:1536px;z-index:89;pointer-events:none}
+#calc{position:fixed;inset:0;z-index:1000;display:none;pointer-events:auto;background:transparent}#calc.open{display:block}.calcShell{position:absolute;width:min(560px,40vw,66vh);aspect-ratio:1;left:50%;top:69%;transform:translate(-50%,-50%);animation:calcOpen .28s cubic-bezier(.2,.9,.2,1.1) both;filter:drop-shadow(0 12px 28px rgba(0,0,0,.34)) drop-shadow(0 0 18px rgba(151,96,255,.22));direction:ltr;pointer-events:auto}@keyframes calcOpen{from{opacity:0;transform:translate(-50%,-47%) scale(.86)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.calcArt{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}.calcDisplay{position:absolute;left:25.6%;top:12.03%;width:50.55%;height:15.55%;display:flex;align-items:flex-end;justify-content:flex-start;padding-left:4%;padding-right:3%;padding-bottom:1.9%;overflow:hidden;color:#fff7de;font-family:Georgia,"Times New Roman",serif;font-size:clamp(20px,2.05vw,38px);font-weight:700;text-shadow:0 0 9px rgba(172,148,255,.5);pointer-events:none;white-space:nowrap}.calcSingle.hide{display:none}.calcFraction{width:100%;height:100%;display:none;align-items:center;justify-content:flex-end;padding-bottom:.5%;flex-direction:column;font-size:.62em;line-height:.88}.calcFraction.show{display:flex}.calcFracRow{min-width:38%;max-width:86%;text-align:center;white-space:nowrap}.calcFracBar{width:46%;height:2px;border-radius:99px;background:#ffe391}.calcHit{position:absolute;border:0;background:transparent;opacity:0;cursor:pointer;z-index:4;touch-action:manipulation}.calcBackUi{left:6.62%;top:18.18%;width:13.08%;height:14.35%}.h7{left:24.32%;top:31.85%;width:10.05%;height:8.48%}.h8{left:35.01%;top:31.85%;width:10.05%;height:8.48%}.h9{left:45.69%;top:31.85%;width:10.05%;height:8.48%}.hback{left:56.22%;top:31.85%;width:10.05%;height:8.48%}.hac{left:66.75%;top:31.85%;width:10.05%;height:8.48%}.h4{left:24.32%;top:42.03%;width:10.05%;height:8.48%}.h5{left:35.01%;top:42.03%;width:10.05%;height:8.48%}.h6{left:45.69%;top:42.03%;width:10.05%;height:8.48%}.hswitch{left:56.22%;top:42.03%;width:10.05%;height:8.48%}.hfrac{left:66.75%;top:42.03%;width:10.05%;height:8.48%}.h1{left:24.32%;top:52.22%;width:10.05%;height:8.48%}.h2{left:35.01%;top:52.22%;width:10.05%;height:8.48%}.h3{left:45.69%;top:52.22%;width:10.05%;height:8.48%}.hsqrt{left:56.22%;top:52.22%;width:10.05%;height:8.48%}.hminus{left:66.75%;top:52.22%;width:10.05%;height:8.48%}.h0{left:24.32%;top:62.68%;width:18.74%;height:9.57%}.hdot{left:44.05%;top:62.68%;width:10.05%;height:9.57%}.hok{left:55.5%;top:61.7%;width:23.2%;height:11.3%}
+@media(max-width:800px){.calcShell{width:min(560px,70vw,66vh)}}
+</style>
+<style id="editorStyle">
+:root{--editorW:390px}
+#editorPanel{position:fixed;left:0;top:0;bottom:0;width:var(--editorW);z-index:5000;background:linear-gradient(180deg,rgba(21,13,43,.985),rgba(8,5,18,.985));border-right:1px solid rgba(193,154,255,.4);color:#f7f0ff;padding:14px;overflow:auto;direction:rtl;font-family:Arial,sans-serif;box-shadow:14px 0 34px rgba(0,0,0,.34)}
+#editorPanel h1{font-size:20px;margin:0 0 5px;color:#ffe38c}#editorPanel .hint{font-size:11px;line-height:1.5;color:#bfb3d8;margin-bottom:10px}
+.edrow{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:7px 0}.edbtn{border:1px solid rgba(208,176,255,.45);background:#241544;color:#fff;border-radius:8px;padding:9px 7px;font-weight:700;cursor:pointer}.edbtn:hover{background:#34205d}.edbtn.primary{background:#6944b8}.edbtn.gold{background:#72521a;border-color:#d8b05a}.edbtn.wide{grid-column:1/-1}.edbtn.danger{background:#47152c}.edbtn.active{box-shadow:0 0 0 2px #f5d776 inset;background:#4e3386}.edbtn:disabled{opacity:.4;cursor:not-allowed}
+#objectList{display:flex;flex-direction:column;gap:4px;margin:10px 0;max-height:235px;overflow:auto;padding-left:3px}.objBtn{display:flex;justify-content:space-between;gap:7px;align-items:center;border:1px solid #392b50;background:#171023;color:#ddd;border-radius:7px;padding:7px 8px;text-align:right;cursor:pointer;font-size:12px}.objBtn.sel{border-color:#ffd76d;background:#2b1d45;color:#fff}.objBtn .meta{font-size:10px;opacity:.6}
+fieldset{border:1px solid #3d2d56;border-radius:9px;padding:8px;margin:9px 0}legend{color:#ffd76d;font-weight:700;font-size:12px;padding:0 5px}
+.edgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.edfield{font-size:11px;color:#c9bfd9}.edfield input,.edfield select{width:100%;margin-top:3px;padding:6px;border-radius:6px;border:1px solid #493a64;background:#0e0a16;color:#fff;direction:ltr}.edfield input[type=color]{padding:2px;height:34px}.edfield input[type=range]{padding:0;accent-color:#ffd66c}
+.edline{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:7px 0;padding:7px;border:1px solid #322543;border-radius:7px;font-size:11px}.edline input[type=checkbox]{width:17px;height:17px;accent-color:#9c74ff}.edline input[type=text],.edline input[type=url],.edline select{flex:1;min-width:0;background:#0e0a16;border:1px solid #493a64;color:#fff;border-radius:6px;padding:6px;direction:ltr}
+.smallrow{display:flex;gap:5px;margin-top:6px}.smallrow .edbtn{flex:1;font-size:11px;padding:6px}
+#studioStatus{font-size:11px;color:#bfb1da;margin-top:8px;min-height:28px;line-height:1.4}
+.edit-mode .edit-target{pointer-events:auto!important}.edit-mode .edit-target.selected-edit{outline:3px solid rgba(255,219,101,.96);outline-offset:3px;filter:drop-shadow(0 0 10px rgba(255,220,95,.55))}.edit-mode .hit-zone.selected-edit{background:rgba(255,214,90,.12)!important}
+.resizeHandle{position:absolute!important;right:-12px!important;bottom:-12px!important;width:24px!important;height:24px!important;border-radius:50%!important;background:#ffd65f!important;border:3px solid #512d91!important;z-index:9999!important;cursor:nwse-resize!important;pointer-events:auto!important;box-shadow:0 0 10px rgba(255,220,100,.8)!important}
+.customAsset img{width:100%;height:100%;display:block;object-fit:contain;pointer-events:none}.studioHidden{display:none!important}
+body.student-preview #editorPanel{opacity:.13;transform:translateX(calc(-1 * var(--editorW) + 42px));transition:opacity .2s,transform .25s}body.student-preview #editorPanel:hover{opacity:1;transform:none}
+#dropOverlay{display:none;position:fixed;inset:0;z-index:9000;background:rgba(8,4,18,.88);align-items:center;justify-content:center;color:white;font-size:20px}#dropOverlay.show{display:flex}
+#tableHit,#bereshitHit{transition:outline .18s ease}.hit-zone{box-sizing:border-box}
+</style>
+<style id="shared-return-to-powered-cylinder-style">
+/* Existing approved cylinder canvas is used only when entering with a shared function. */
+/* The approved cylinder ALWAYS renders the parchment and equation itself. */
+#stage.return-snapshot #scrollSnapshotCanvas{display:none!important}
+#stage.return-snapshot #scroll iframe{visibility:visible!important}
+#stage.general-function .dial{display:none!important}
+/* The cylinder, not the dials, owns a turn. Suppress needles until the actual parchment settles. */
+#stage.cylinder-spinning .dial{visibility:hidden!important;pointer-events:none!important}
+</style>
+</head>
+<body>
+<div id="scene"><div class="" id="stage" style=";left:50%;top:50%;transform-origin:0 0;">
+<div class="obj" id="background" style=";left:0px;top:0px;width:2048px;height:1536px;z-index:0;opacity:1.0;"><img alt="" src="assets/background.png"/></div><canvas height="1536" id="ambientCanvas" width="2048"></canvas>
+<div class="obj" id="axes" style=";left:491px;top:433px;width:331px;height:207px;z-index:34;opacity:1.0;"><img alt="" src="assets/axes.png"/></div><div aria-hidden="true" class="" id="tableHit" style=";left:822px;top:350px;width:401px;height:325px;z-index:90;opacity:1.0;"></div><div aria-hidden="true" class="" id="bereshitHit" style=";left:712px;top:99px;width:620px;height:251px;z-index:62;opacity:1.0;"></div><div class="obj" id="table" style=";left:822px;top:424px;width:401px;height:251px;z-index:89;opacity:1.0;"><img alt="" src="assets/table.png"/></div><div class="obj" id="castle" style=";left:1203px;top:406px;width:382px;height:239px;z-index:34;opacity:1.0;"><img alt="" src="assets/castle.png"/></div>
+<div class="obj" id="scroll" style=";left:290px;top:614px;width:1479px;height:330px;z-index:64;opacity:1.0;"><iframe id="perfectCylinder" scrolling="no" src="CYLINDER_APPROVED_FINAL_v6_LONGER_EXIT.html?approved_handle=1" title="הגליל המושלם"></iframe><canvas aria-hidden="true" height="682" id="scrollSnapshotCanvas" width="2048"></canvas><button aria-label="הקודם" class="scrollArrowHit" id="scrollPrev"></button><button aria-label="הבא" class="scrollArrowHit" id="scrollNext"></button></div>
+<div class="obj" id="bsd" style=";left:1838px;top:-1px;width:117px;height:39px;z-index:60;opacity:1.0;"><img alt="" src="assets/bsd.png"/></div><div class="obj" id="signature" style=";left:26px;top:1474px;width:219px;height:66px;z-index:60;opacity:1.0;"><img alt="" src="assets/signature.png"/></div><div class="obj" id="bereshit" style=";left:712px;top:99px;width:620px;height:465px;z-index:61;opacity:1.0;"><img alt="" src="assets/bereshit.png"/></div><div class="obj" id="title" style=";left:612px;top:54px;width:664px;height:216px;z-index:63;opacity:1.0;"><img alt="" src="assets/title.png"/></div>
+<div class="panel" id="familyPanel" style=";left:496px;top:1075px;width:467px;height:263px;z-index:68;opacity:1.0;"><img alt="" src="assets/family_panel_new.png"/><canvas height="1080" width="1920"></canvas></div><div class="panel" id="carPanel" style=";left:916px;top:986px;width:775px;height:435px;z-index:69;opacity:1.0;"><img alt="" src="assets/car_panel.png"/><canvas height="1080" width="1920"></canvas></div>
+<div class="dial" data-key="m" id="mDial" style=";left:652px;top:827px;width:314px;height:314px;z-index:72;opacity:1.0;"><img alt="" src="assets/dial_m.png"/><img alt="" class="needle" src="assets/needle.png"/></div><div class="dial" data-key="b" id="bDial" style=";left:1104px;top:838px;width:278px;height:278px;z-index:74;opacity:1.0;"><img alt="" src="assets/dial_b.png"/><img alt="" class="needle" src="assets/needle.png"/></div>
+<div class="dial parDial" data-key="a" id="aDial" style=";left:608px;top:849px;width:255px;height:255px;z-index:78;opacity:1.0;"><img alt="" src="assets/dial_a.png"/><img alt="" class="needle" src="assets/needle.png"/></div><div class="dial parDial" data-key="b" id="pbDial" style=";left:897px;top:869px;width:244px;height:244px;z-index:90;opacity:1.0;"><img alt="" src="assets/dial_b.png"/><img alt="" class="needle" src="assets/needle.png"/></div><div class="dial parDial" data-key="c" id="cDial" style=";left:1234px;top:868px;width:234px;height:234px;z-index:78;opacity:1.0;"><img alt="" src="assets/dial_c.png"/><img alt="" class="needle" src="assets/needle.png"/></div>
+<div class="powerPart" id="socket" style=";left:825px;top:1009px;width:187px;height:151px;z-index:92;opacity:1.0;"><img alt="" src="assets/socket.png"/></div><div class="powerPart" id="plug" style=";left:1008px;top:998px;width:218px;height:176px;z-index:91;opacity:1.0;"><img alt="" src="assets/plug.png"/></div><div class="" id="connector" style=";left:840px;top:991px;width:354px;height:184px;z-index:93;opacity:1.0;;display:none;;display:none;;display:none;;display:none;;display:none;"><img alt="" src="assets/connector_connected.png"/></div><canvas height="1536" id="energyCanvas" width="2048"></canvas><canvas id="triangleEnergyCanvas" width="2048" height="1536" aria-hidden="true"></canvas>
+</div></div>
+<div id="calc"><div class="calcShell" id="calcShell"><img alt="" class="calcArt" src="assets/calculator.png"/><div class="calcDisplay"><span id="calcSingle">0</span><div class="calcFraction" id="calcFraction"><div id="calcNum">0</div><div class="calcFracBar"></div><div id="calcDen">1</div></div></div>
+<button class="calcHit calcBackUi" data-action="close"></button><button class="calcHit h7" data-key="7"></button><button class="calcHit h8" data-key="8"></button><button class="calcHit h9" data-key="9"></button><button class="calcHit hback" data-action="back"></button><button class="calcHit hac" data-action="ac"></button><button class="calcHit h4" data-key="4"></button><button class="calcHit h5" data-key="5"></button><button class="calcHit h6" data-key="6"></button><button class="calcHit hswitch" data-action="switch"></button><button class="calcHit hfrac" data-action="fraction"></button><button class="calcHit h1" data-key="1"></button><button class="calcHit h2" data-key="2"></button><button class="calcHit h3" data-key="3"></button><button class="calcHit hsqrt" data-action="sqrt"></button><button class="calcHit hminus" data-action="minus"></button><button class="calcHit h0" data-key="0"></button><button class="calcHit hdot" data-key="."></button><button class="calcHit hok" data-action="ok"></button>
+</div></div>
+<script>
+(()=>{'use strict';
+const W=2048,H=1536,$=id=>document.getElementById(id),stage=$('stage');
+function fit(){const s=Math.min(innerWidth/W,innerHeight/H);stage.style.left=(innerWidth-W*s)/2+'px';stage.style.top=(innerHeight-H*s)/2+'px';stage.style.transform=`scale(${s})`}addEventListener('resize',fit);fit();
+const imgCache=new Map();function image(src){if(imgCache.has(src))return imgCache.get(src);const im=new Image();im.src=src;imgCache.set(src,im);return im}
+const state={family:'linear',power:false,charged:false,connecting:false,triangleReadyAt:0,triangleClosedAt:0,linear:{m:{active:false,value:'0',visual:0},b:{active:false,value:'0',visual:0}},parabola:{a:{active:false,value:'0',visual:0},b:{active:false,value:'0',visual:0},c:{active:false,value:'0',visual:0}}};
+const ANGLES={"-3":-112.68,"-2":-77.17,"-1":-40.76,"0":0,"1":40.25,"2":76.69,"3":114.31};
+const DIALS={m:$('mDial'),b:$('bDial'),a:$('aDial'),pb:$('pbDial'),c:$('cDial')};
+function angleFor(v){return ANGLES[String(Math.max(-3,Math.min(3,Number(v))))]??1.53}
+function renderNeedle(el,v){el.querySelector('.needle').style.transform=`rotate(${angleFor(v)}deg)`}
+Object.values(DIALS).forEach(el=>renderNeedle(el,0));
+// One authoritative page->needle mapping. Read the canonical cylinder's finished page.
+// Keep each family's saved values separate; never show five needles together.
+function synchronizeNeedlesWithPage(key){
+ const general=key==='general';
+ if(!general){state.family=key==='quadratic'?'parabola':'linear'}
+ stage.classList.toggle('parabola',!general&&state.family==='parabola');
+ stage.classList.toggle('general-function',general);
+ const {m,b}=state.linear;
+ const {a,b:pb,c}=state.parabola;
+ for(const [dial,param] of [[DIALS.m,m],[DIALS.b,b],[DIALS.a,a],[DIALS.pb,pb],[DIALS.c,c]])
+   renderNeedle(dial,param.active?param.value:0);
+ stage.classList.remove('cylinder-spinning');
+ updateReady();
+}
+window.__MAMLACHAT_PLAY_SYNC_CYLINDER_PAGE__=synchronizeNeedlesWithPage;
+
+function dialState(el){const k=el.dataset.key;return state.family==='linear'?state.linear[k]:state.parabola[k]}
+function nearestDialValue(el,e){const r=el.getBoundingClientRect(),px=r.left+r.width*.5,py=r.top+r.height*.5;const deg=Math.atan2(e.clientX-px,-(e.clientY-py))*180/Math.PI;let best=0,dist=1e9;for(const [k,a] of Object.entries(ANGLES)){const d=Math.abs(deg-a);if(d<dist){dist=d;best=Number(k)}}return best}
+let dragging=null;function dialDown(e){if(state.power||state.connecting)return;const el=e.currentTarget,r=el.getBoundingClientRect(),cx=r.left+r.width*.5,cy=r.top+r.height*.52;if(Math.hypot(e.clientX-cx,e.clientY-cy)<Math.min(r.width,r.height)*.17){openCalc(el.dataset.key);return}dragging=el;el.classList.add('dragging');el.setPointerCapture?.(e.pointerId);setDialValue(el,nearestDialValue(el,e))}
+function dialMove(e){if(dragging===e.currentTarget&&!state.power&&!state.connecting)setDialValue(e.currentTarget,nearestDialValue(e.currentTarget,e))}function dialUp(e){if(dragging===e.currentTarget){e.currentTarget.classList.remove('dragging');dragging=null}}
+Object.values(DIALS).forEach(el=>{el.addEventListener('pointerdown',dialDown);el.addEventListener('pointermove',dialMove);el.addEventListener('pointerup',dialUp);el.addEventListener('pointercancel',dialUp)});
+function setDialValue(el,v){if(state.power||state.connecting)return;const s=dialState(el);if(!s.active&&v===0)return;s.active=true;s.value=String(v);s.visual=v;renderNeedle(el,v);renderFormula();updateReady()}
+function linearFormula(){const m=state.linear.m,b=state.linear.b;let left=m.active?(m.value==='1'?'x':m.value==='-1'?'-x':m.value+'x'):'mx';if(!b.active)return `y = ${left} + b`;if(b.value.startsWith('-'))return `y = ${left} - ${b.value.slice(1)}`;return `y = ${left} + ${b.value}`}
+function parabolaFormula(){const a=state.parabola.a,b=state.parabola.b,c=state.parabola.c;const at=a.active?a.value:'a',bt=b.active?b.value:'b',ct=c.active?c.value:'c';let s='f(x) = ';s+=at==='1'?'x²':at==='-1'?'-x²':at+'x²';if(bt==='b')s+=' + bx';else if(bt==='0'){}else if(bt==='1')s+=' + x';else if(bt==='-1')s+=' - x';else if(bt.startsWith('-'))s+=' - '+bt.slice(1)+'x';else s+=' + '+bt+'x';if(ct==='c')s+=' + c';else if(ct==='0'){}else if(ct.startsWith('-'))s+=' - '+ct.slice(1);else s+=' + '+ct;return s}
+function cylinderPayload(){const val=x=>x.active?x.value:null;return {linear:{m:val(state.linear.m),b:val(state.linear.b)},quadratic:{a:val(state.parabola.a),b:val(state.parabola.b),c:val(state.parabola.c)},useValues:true}}
+function cylinderPost(type,payload){const f=$('perfectCylinder');if(!f||!f.contentWindow)return;f.contentWindow.postMessage({type,payload},'*')}
+// Snapshot renderer retired: the canonical iframe owns all cylinder text and turns.
+function renderFormula(){
+ // Keep all parameters synchronized with the original iframe, without painted copies.
+ cylinderPost('cylinder:update',cylinderPayload());
+}
+function restoreCylinderView(){
+ if(state.importedF){
+  if(state.importedF.general)cylinderPost('cylinder:showGeneral',{formula:state.importedF.display});
+  else if(state.family==='parabola')cylinderPost('cylinder:showQuadratic',{a:state.parabola.a.value,b:state.parabola.b.value,c:state.parabola.c.value});
+  else cylinderPost('cylinder:showLinear',{m:state.linear.m.value,b:state.linear.b.value});
+ }else cylinderPost('cylinder:update',cylinderPayload());
+}
+
+function setMasterFamily(next,dir=1,animate=false){
+ if(state.power||state.connecting||stage.classList.contains('cylinder-spinning'))return false;
+ const desired=next==='parabola'?'parabola':'linear';
+ const changed=state.family!==desired;
+ if(changed&&animate)stage.classList.add('cylinder-spinning');
+ // Store requested family, but expose its needles only after the original turn ends.
+ state.family=desired;
+ if(!animate||!changed)synchronizeNeedlesWithPage(desired==='parabola'?'quadratic':'linear');
+ renderFormula();
+ if(changed&&animate)cylinderPost(dir<0?'cylinder:spinPrev':'cylinder:spinNext');
+ const btn=document.getElementById('familyToggle');
+ if(btn)btn.textContent=desired==='parabola'?'הצג ישר':'הצג פרבולה';
+ return true;
+}
+window.__setMasterFamily=setMasterFamily;
+const originalCylinderIframe=document.getElementById('perfectCylinder');
+window.addEventListener('message',e=>{
+ if(e.source!==originalCylinderIframe?.contentWindow||e.data?.type!=='cylinder:page-changed')return;
+ synchronizeNeedlesWithPage(e.data.key);
+});
+function switchFamily(dir=1){setMasterFamily(state.family==='linear'?'parabola':'linear',dir,true)}
+$('scrollPrev').addEventListener('pointerup',e=>{e.preventDefault();e.stopPropagation();switchFamily(-1)});$('scrollNext').addEventListener('pointerup',e=>{e.preventDefault();e.stopPropagation();switchFamily(1)});$('scroll').addEventListener('pointerup',e=>{if(e.target.closest&&e.target.closest('.scrollArrowHit'))return;switchFamily(1)});const cylinderFrame=$('perfectCylinder');if(cylinderFrame)cylinderFrame.addEventListener('load',()=>restoreCylinderView());$('bereshit').addEventListener('click',()=>window.open('https://idanahvan.my.canva.site/funki-kingdom','_blank','noopener'));
+const tableHit=$('tableHit'), tableObj=$('table');
+if(tableHit&&tableObj){['pointerenter','mouseenter'].forEach(ev=>tableHit.addEventListener(ev,()=>tableObj.classList.add('proxyHover')));['pointerleave','mouseleave','pointercancel'].forEach(ev=>tableHit.addEventListener(ev,()=>{tableObj.classList.remove('proxyHover');tableObj.classList.remove('proxyActive')}));tableHit.addEventListener('pointerdown',()=>tableObj.classList.add('proxyActive'));tableHit.addEventListener('pointerup',()=>tableObj.classList.remove('proxyActive'));tableHit.addEventListener('click',()=>tableObj.click());}
+const bereshitHit=$('bereshitHit'), bereshitObj=$('bereshit');
+if(bereshitHit&&bereshitObj){['pointerenter','mouseenter'].forEach(ev=>bereshitHit.addEventListener(ev,()=>bereshitObj.classList.add('proxyHover')));['pointerleave','mouseleave','pointercancel'].forEach(ev=>bereshitHit.addEventListener(ev,()=>{bereshitObj.classList.remove('proxyHover');bereshitObj.classList.remove('proxyActive')}));bereshitHit.addEventListener('pointerdown',()=>bereshitObj.classList.add('proxyActive'));bereshitHit.addEventListener('pointerup',()=>bereshitObj.classList.remove('proxyActive'));bereshitHit.addEventListener('click',()=>bereshitObj.click());}
+// Calculator
+let calcVar='m',calcMode='single',single='0',num='0',den='1',fracPart='num',freshDen=false;const calc=$('calc');
+function renderCalc(){const singleEl=$('calcSingle'),frac=$('calcFraction');if(calcMode==='single'){singleEl.style.display='inline';singleEl.textContent=single;frac.classList.remove('show')}else{singleEl.style.display='none';frac.classList.add('show');$('calcNum').textContent=num;$('calcDen').textContent=den}}
+function current(){return calcMode==='single'?single:(fracPart==='num'?num:den)}function write(v){if(calcMode==='single')single=v;else if(fracPart==='num')num=v;else den=v;renderCalc()}
+function openCalc(k){if(state.power||state.connecting)return;calcVar=k;calcMode='single';single='0';num='0';den='1';fracPart='num';freshDen=false;renderCalc();calc.classList.add('open')}
+function closeCalc(){calc.classList.remove('open')}
+function append(k){if(calcMode==='fraction'&&fracPart==='den'&&freshDen){den='0';freshDen=false}let v=current(),neg=v.startsWith('-'),body=neg?v.slice(1):v;if(body.startsWith('√'))return;if(k==='.'&&body.includes('.'))return;if(body==='0'&&k!=='.')body=k;else body+=k;write((neg?'-':'')+body)}
+function ac(){calcMode='single';single='0';num='0';den='1';fracPart='num';freshDen=false;renderCalc()}function back(){let v=current();if(v.includes('√'))v='0';else{v=v.slice(0,-1);if(!v||v==='-')v='0'}write(v)}function minus(){let v=current();write(v.startsWith('-')?(v.slice(1)||'0'):'-'+v)}
+function fraction(){if(calcMode==='single'){if(single.includes('√'))return;calcMode='fraction';num=single;den='1';fracPart='num';freshDen=true}else{calcMode='single';single=num+'/'+den}renderCalc()}function swapPart(){if(calcMode==='fraction'){fracPart=fracPart==='num'?'den':'num';renderCalc()}}
+function sqrtKey(){let raw=current();if(raw.startsWith('-')||!/^\d+(\.\d+)?$/.test(raw))return;const n=Number(raw),r=Math.sqrt(n);write(Number.isInteger(r)?String(r):'√'+raw)}
+function rawValue(){return calcMode==='fraction'?`${num}/${den}`:single}function valid(v){return /^[-+]?\d+(\.\d+)?(\/[-+]?\d+(\.\d+)?)?$/.test(v)||/^-?√\d+(\.\d+)?$/.test(v)}
+function ok(){const v=rawValue();if((calcMode==='fraction'&&Number(den)===0)||!valid(v))return;const group=state.family==='linear'?state.linear:state.parabola;const key=calcVar==='pb'?'b':calcVar;if(!group[key])return;group[key].active=true;group[key].value=v;renderFormula();updateReady();closeCalc()}
+$('calcShell').addEventListener('pointerup',e=>{const b=e.target.closest('.calcHit');if(!b)return;e.preventDefault();e.stopPropagation();if(b.dataset.key!==undefined)append(b.dataset.key);else{({close:closeCalc,back,ac,minus,fraction,switch:swapPart,sqrt:sqrtKey,ok}[b.dataset.action]||(()=>{}))()}});calc.addEventListener('pointerdown',e=>{if(e.target===calc)closeCalc()});
+// Power
+const socket=$('socket'),plug=$('plug'),connector=$('connector'),familyPanel=$('familyPanel'),carPanel=$('carPanel');
+// MASTER -> Function Ride bridge. Keeps the approved MASTER visuals untouched.
+const FUNCTION_RIDE_PAGE='מתחם הפונקציה- קומפוזיציה.html';
+const FIXED_INPUT_OUTPUT_PAGE='מתחם הפונקציה- קומפוזיציה.html?lesson=basic';
+function currentFunctionRideConfig(){
+  if(state.importedF?.general)return {type:'expression',expression:state.importedF.expression};
+  const raw=v=>String(v??'0').replace(/−/g,'-');
+  if(state.family==='parabola')return {type:'quadratic',a:raw(state.parabola.a.value),b:raw(state.parabola.b.value),c:raw(state.parabola.c.value)};
+  return {type:'linear',m:raw(state.linear.m.value),b:raw(state.linear.b.value)};
+}
+// One canonical function payload for every kingdom. The receiving page must opt into the bridge.
+function masterFunctionMessage(){
+ const cfg=currentFunctionRideConfig();
+ const expression=state.importedF?.expression||(state.family==='parabola'?parabolaFormula():linearFormula());
+ return {version:1,source:'MAMLECHET_FUNCTION_MASTER',function:cfg,expression,updatedAt:Date.now()};
+}
+function publishMasterFunction(){
+ if(!paramsReady())return null;
+ const msg=masterFunctionMessage();
+ try{localStorage.setItem('MAMLECHET_FUNCTION_SHARED_V1',JSON.stringify(msg));localStorage.setItem('mamlachat.functionRide.function.v1',JSON.stringify(msg.function))}catch(_e){}
+ try{new BroadcastChannel('MAMLECHET_FUNCTION_SYNC_V1').postMessage(msg)}catch(_e){}
+ return msg;
+}
+window.__openFamilyAxesFromMaster=function(relativeLink,target){
+ if(!state.power||!paramsReady())return;
+ const msg=publishMasterFunction();
+ if(!msg)return;
+ const raw=relativeLink||'ממלכת הצירים מושלם מסך מלא.html';
+ const url=new URL(raw,location.href);
+ const cfg=msg.function;
+ url.searchParams.set('functionType',cfg.type);
+ for(const [key,val] of Object.entries(cfg))if(key!=='type')url.searchParams.set(key,String(val));
+ url.searchParams.set('fromMaster','1');
+ url.searchParams.set('source','cylinder-master');
+ const {type,m,b,a,c}=cfg;
+ const signed=v=>Number(v)>=0?'+'+String(v):String(v);
+ const f=state.importedF?.expression||(type==='quadratic'?`${a}*x^2${signed(b)}*x${signed(c)}`:`${m}*x${signed(b)}`);
+ url.searchParams.set('f',f);
+ url.searchParams.set('display','f(x)='+f.replace(/(^|[+\-])1\*x/g,'$1x').replace(/(^|[+\-])-1\*x/g,'$1-x').replace(/\*/g,''));
+ try{localStorage.setItem('mamlachat.functionHub.v1',JSON.stringify({schemaVersion:1,revision:Date.now(),expression:f,display:'f(x)='+f,source:'cylinder-master',updatedAt:Date.now()}))}catch(_){}
+ window.open(url.href,target||'_blank',target==='_blank'?'noopener':'');
+};
+if(familyPanel){
+  familyPanel.setAttribute('role','link');
+  familyPanel.setAttribute('tabindex','0');
+  familyPanel.setAttribute('aria-label','מעבר לממלכת הצירים');
+  familyPanel.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&state.power){e.preventDefault();window.__openFamilyAxesFromMaster('ממלכת הצירים מושלם מסך מלא.html','_blank')}});
+}
+function openFunctionRideFromMaster(){
+  if(!state.power||!paramsReady())return;
+  const cfg=currentFunctionRideConfig();
+  const q=new URLSearchParams();Object.entries(cfg).forEach(([k,v])=>q.set(k,v));
+  if(state.importedF?.expression){q.set('f',state.importedF.expression);q.set('display',state.importedF.display||'f(x)='+state.importedF.expression);}
+  publishMasterFunction();
+  const url=(window.__FUNCTION_RIDE_PAGE||FUNCTION_RIDE_PAGE)+'?'+q.toString();
+  window.open(url,'_blank');
+}
+if(carPanel){
+  carPanel.setAttribute('role','link');
+  carPanel.setAttribute('aria-label','פתיחת מתקן הקלט והפלט עם הפונקציה שנבחרה');
+  carPanel.addEventListener('click',e=>{if(typeof editMode!=='undefined'&&editMode)return;e.preventDefault();e.stopPropagation();openFunctionRideFromMaster()});
+}
+
+
+function openFixedInputOutputRide(){
+  window.open(FIXED_INPUT_OUTPUT_PAGE,'_blank');
+}
+const castlePanel=$('castle');
+if(castlePanel){
+  castlePanel.setAttribute('role','link');
+  castlePanel.setAttribute('aria-label','פתיחת מתקן קלט ופלט הקבוע y=x+1');
+  castlePanel.addEventListener('click',e=>{if(typeof editMode!=='undefined'&&editMode)return;e.preventDefault();e.stopPropagation();openFixedInputOutputRide()});
+}
+
+function paramsReady(){if(state.importedF?.general)return true;const g=state.family==='linear'?state.linear:state.parabola;return Object.values(g).every(x=>x.active)}
+function updateReady(){const locked=state.power||state.connecting;stage.classList.toggle('function-locked',locked);const ready=paramsReady()&&!locked;socket.classList.toggle('ready',ready);plug.classList.toggle('ready',ready);for(const el of Object.values(DIALS)){el.setAttribute('aria-disabled',locked?'true':'false')}const sc=$('scroll');if(sc)sc.setAttribute('aria-disabled',locked?'true':'false')}
+function resetCurrentFamilyParams(){
+  if(state.family==='linear'){
+    state.linear.m.active=false;state.linear.m.value='0';state.linear.m.visual=0;
+    state.linear.b.active=false;state.linear.b.value='0';state.linear.b.visual=0;
+    renderNeedle(DIALS.m,0);renderNeedle(DIALS.b,0);
+  }else{
+    state.parabola.a.active=false;state.parabola.a.value='0';state.parabola.a.visual=0;
+    state.parabola.b.active=false;state.parabola.b.value='0';state.parabola.b.visual=0;
+    state.parabola.c.active=false;state.parabola.c.value='0';state.parabola.c.visual=0;
+    renderNeedle(DIALS.a,0);renderNeedle(DIALS.pb,0);renderNeedle(DIALS.c,0);
+  }
+  renderFormula();
+  updateReady();
+}
+function connect(){if(state.connecting)return;if(state.power){disconnect();return}if(!paramsReady())return;state.connecting=true;updateReady();socket.classList.add('connecting');plug.classList.add('connecting');setTimeout(()=>{if(!state.connecting)return;socket.classList.add('hidden');plug.classList.add('hidden');connector.style.display='block';state.power=true;state.connecting=false;state.triangleClosedAt=0;stage.querySelector('#scroll').classList.add('energizing');connector.classList.add('energizing');publishMasterFunction();pulseEnergy();state.triangleReadyAt=performance.now()+2850;setTimeout(()=>{if(!state.power)return;familyPanel.classList.add('powered');carPanel.classList.add('powered')},820);setTimeout(()=>{if(!state.power)return;state.charged=true},1180);setTimeout(()=>{stage.querySelector('#scroll').classList.remove('energizing');connector.classList.remove('energizing')},3180)},580)}
+function disconnect(){if(!state.power&&!state.connecting)return;const wasImported=!!state.importedF;const wasGeneral=!!state.importedF?.general;state.returnDisconnectedExpression=state.importedF?.expression||null;state.importedF=null;stage.classList.remove('general-function');stage.classList.remove('return-snapshot');state.power=false;state.charged=false;state.connecting=false;state.triangleReadyAt=0;state.triangleClosedAt=0;familyPanel.classList.remove('powered');carPanel.classList.remove('powered');$('energyCanvas').getContext('2d').clearRect(0,0,W,H);$('triangleEnergyCanvas').getContext('2d').clearRect(0,0,W,H);stage.querySelector('#scroll').classList.remove('energizing');connector.classList.remove('energizing');connector.style.display='none';socket.classList.remove('hidden');plug.classList.remove('hidden');resetCurrentFamilyParams();synchronizeNeedlesWithPage(wasGeneral?'general':state.family==='parabola'?'quadratic':'linear');window.__ROYAL_PLAY_SET_PAGE__?.(wasGeneral?'general':state.family==='parabola'?'quadratic':'linear');socket.classList.add('connecting');plug.classList.add('connecting');requestAnimationFrame(()=>requestAnimationFrame(()=>{socket.classList.remove('connecting');plug.classList.remove('connecting');updateReady()}))}
+[socket,plug].forEach(x=>x.addEventListener('pointerup',connect));connector.addEventListener('pointerup',disconnect);
+function pulseEnergy(){const cv=$('energyCanvas'),ctx=cv.getContext('2d'),t0=performance.now(),dur=3350;
+ const start={x:1024,y:884},node={x:1016,y:1080},left={x:720,y:1204},right={x:1340,y:1196};
+ const bez=(p0,p1,p2,p3,t)=>{const u=1-t;return{x:u*u*u*p0.x+3*u*u*t*p1.x+3*u*t*t*p2.x+t*t*t*p3.x,y:u*u*u*p0.y+3*u*u*t*p1.y+3*u*t*t*p2.y+t*t*t*p3.y}};
+ const paths=[{a:start,b:{x:1025,y:930},c:{x:1007,y:1016},d:node,t0:0,t1:.34},{a:node,b:{x:952,y:1125},c:{x:826,y:1152},d:left,t0:.14,t1:1},{a:node,b:{x:1088,y:1118},c:{x:1226,y:1148},d:right,t0:.14,t1:1}];
+ function trace(p,end,width,alpha,color,wiggle=0,phase=0){if(end<=0)return;ctx.beginPath();const n=Math.max(2,Math.floor(58*end));for(let i=0;i<=n;i++){const t=i/58,q=bez(p.a,p.b,p.c,p.d,t);const dx=p.d.x-p.a.x,dy=p.d.y-p.a.y,len=Math.hypot(dx,dy)||1;const nx=-dy/len,ny=dx/len;const off=wiggle*Math.sin(t*24+phase+t0*.0001)*(1-Math.abs(t-.5)*.65);const x=q.x+nx*off,y=q.y+ny*off;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=width;ctx.strokeStyle=color;ctx.globalAlpha=alpha;ctx.stroke()}
+ function electric(p,end,now,seed){if(end<=0)return;for(let branch=0;branch<4;branch++){ctx.beginPath();const n=Math.max(2,Math.floor(50*end));for(let i=0;i<=n;i++){const t=i/50,q=bez(p.a,p.b,p.c,p.d,t);const dx=p.d.x-p.a.x,dy=p.d.y-p.a.y,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len;const jitter=(Math.sin(t*63+now*.022+seed+branch*2.1)+.55*Math.sin(t*121-now*.018+branch))*5.6*(1-t*.34);const x=q.x+nx*jitter,y=q.y+ny*jitter;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.lineWidth=branch===0?2.6:(branch===1?1.8:1.1);ctx.strokeStyle=branch===0?'#ffffff':(branch===1?'#ffc7f2':(branch===2?'#9eeaff':'#c7b3ff'));ctx.globalAlpha=branch===0?.78:(branch===1?.58:.42);ctx.stroke()}}
+ function halo(x,y,r,a){const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,`rgba(255,255,255,${.72*a})`);g.addColorStop(.18,`rgba(255,214,243,${.54*a})`);g.addColorStop(.42,`rgba(204,170,255,${.36*a})`);g.addColorStop(.66,`rgba(136,223,255,${.24*a})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.globalAlpha=1;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()}
+ function starBurst(x,y,baseR,a){ctx.save();ctx.translate(x,y);ctx.globalAlpha=a;for(let i=0;i<8;i++){ctx.rotate(Math.PI/4);ctx.beginPath();ctx.moveTo(0,-baseR);ctx.lineTo(3,-baseR*.3);ctx.lineTo(0,0);ctx.lineTo(-3,-baseR*.3);ctx.closePath();ctx.fillStyle=i%2?'rgba(255,207,243,.68)':'rgba(159,234,255,.62)';ctx.fill()}ctx.restore();}
+ function frame(now){if(!state.power){ctx.clearRect(0,0,W,H);return}const q=Math.min(1,(now-t0)/dur),ease=1-Math.pow(1-q,3);ctx.clearRect(0,0,W,H);ctx.save();ctx.globalCompositeOperation='screen';
+  // pure, delicate energy stream starting exactly from the lower diamond of the scroll
+  paths.forEach((p,idx)=>{const end=Math.max(0,Math.min(1,(ease-p.t0)/(p.t1-p.t0)));trace(p,end,76,.052,'#8f70ff',8,idx);trace(p,end,46,.085,'#ffb9f0',6,idx+.7);trace(p,end,26,.16,'#8fe7ff',4.4,idx+1.2);trace(p,end,12,.46,'#f0d1ff',2.2,idx+1.8);trace(p,end,5.6,.95,'#ffffff',1.1,idx+2.8);electric(p,end,now,idx*4.7)});
+  const sourceImpact=Math.max(0,1-Math.abs(q-.11)/.13),lockImpact=Math.max(0,1-Math.abs(q-.19)/.16);
+  halo(start.x,start.y,84+sourceImpact*72,.88);halo(start.x,start.y,34+sourceImpact*26,.9);starBurst(start.x,start.y,48+sourceImpact*18,.46+.18*sourceImpact);
+  halo(node.x,node.y,98+lockImpact*82,.9);halo(node.x,node.y,42+lockImpact*36,.92);if(q>.26){halo(left.x,left.y,66+Math.sin(now*.009)*10,.62);halo(right.x,right.y,66+Math.sin(now*.009+1.4)*10,.62)}
+  // bright travelling packets inside the light stream
+  for(let i=0;i<96;i++){const ph=q*1.72-i*.013;if(ph<=0)continue;const branch=i%3,p=paths[branch];const local=Math.max(0,Math.min(1,(ph-p.t0)/(p.t1-p.t0)));if(local<=0||local>=1)continue;const pos=bez(p.a,p.b,p.c,p.d,local),tw=.5+.5*Math.sin(now*.019+i*2.7);ctx.beginPath();ctx.arc(pos.x+Math.sin(i*1.37)*5,pos.y+Math.cos(i*1.11)*3,1.8+(i%5)*.8,0,Math.PI*2);ctx.fillStyle=i%4===0?'#ffffff':(i%4===1?'#ffc7f2':(i%4===2?'#9eeaff':'#dcb8ff'));ctx.globalAlpha=.32+.6*tw;ctx.fill()}
+  // pastel static sparks around the connector at lock moment
+  if(q<.5){for(let i=0;i<22;i++){const a=i/22*Math.PI*2+now*.0016,r=42+20*Math.sin(i*2.2+now*.006),x=node.x+Math.cos(a)*r,y=node.y+Math.sin(a)*r;ctx.beginPath();ctx.moveTo(node.x+Math.cos(a)*(r*.42),node.y+Math.sin(a)*(r*.42));ctx.lineTo(x,y);ctx.lineWidth=1.25;ctx.strokeStyle=i%3===0?'#ffffff':(i%2?'#ffc7f2':'#9feaff');ctx.globalAlpha=.26+.27*Math.sin(now*.01+i);ctx.stroke()}}
+  ctx.restore();if(q<1)requestAnimationFrame(frame);else ctx.clearRect(0,0,W,H)}requestAnimationFrame(frame)}
+
+// Continuous three-way energy loop: the connector first energizes both panels.
+// Only after that energy fully reaches the panel centers do the panels begin
+// feeding one another, closing the lower side of the triangle with no dead pause.
+(function triangleEnergyLoop(){
+  const cv=$('triangleEnergyCanvas'),ctx=cv&&cv.getContext('2d');
+  if(!cv||!ctx)return;
+  const P={source:{x:1024,y:884},top:{x:1016,y:1080},left:{x:720,y:1204},right:{x:1340,y:1196},mid:{x:1016,y:1212}};
+  const segSourceTop={a:P.source,c1:{x:1025,y:930},c2:{x:1008,y:1018},b:P.top,boost:.78};
+  const segTopLeft={a:P.top,c1:{x:952,y:1124},c2:{x:826,y:1150},b:P.left,boost:.82};
+  const segTopRight={a:P.top,c1:{x:1088,y:1118},c2:{x:1226,y:1148},b:P.right,boost:.82};
+  const segBottomLeft={a:P.left,c1:{x:812,y:1228},c2:{x:930,y:1218},b:P.mid,boost:1.10};
+  const segBottomRight={a:P.right,c1:{x:1220,y:1222},c2:{x:1096,y:1218},b:P.mid,boost:1.10};
+  const bez=(p0,p1,p2,p3,t)=>{const u=1-t;return{x:u*u*u*p0.x+3*u*u*t*p1.x+3*u*t*t*p2.x+t*t*t*p3.x,y:u*u*u*p0.y+3*u*u*t*p1.y+3*u*t*t*p2.y+t*t*t*p3.y}};
+  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+  function traceSegment(seg,end,cb){
+    const steps=Math.max(2,Math.floor(74*end));
+    for(let i=0;i<=steps;i++){
+      const t=end*(i/steps),q=bez(seg.a,seg.c1,seg.c2,seg.b,t);
+      cb(i,steps,t,q);
+    }
+  }
+  function strokeSeg(seg,now,end=1,wigScale=1,alphaMul=1,widthMul=1){
+    if(end<=0)return;
+    const pulse=.78+.22*Math.sin(now*.0027);
+    const layers=[[76,.052,'#8f70ff',7.4],[46,.085,'#ffb9f0',5.5],[26,.16,'#8fe7ff',3.8],[12,.46,'#f0d1ff',2.1],[5.6,.95,'#ffffff',1.0]];
+    for(const [w,a,col,wig] of layers){
+      ctx.beginPath();
+      traceSegment(seg,end,(i,steps,t,q)=>{
+        const dx=seg.b.x-seg.a.x,dy=seg.b.y-seg.a.y,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len;
+        const off=(Math.sin(t*24+now*.0042)*wig + Math.sin(t*49-now*.0026)*wig*.36)*wigScale;
+        const x=q.x+nx*off,y=q.y+ny*off;
+        i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+      });
+      ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=w*seg.boost*widthMul;ctx.strokeStyle=col;ctx.globalAlpha=a*pulse*alphaMul;ctx.stroke();
+    }
+  }
+  function packet(seg,t,now,i,sizeMul=1,alphaMul=1){
+    const q=bez(seg.a,seg.c1,seg.c2,seg.b,t),tw=.55+.45*Math.sin(now*.012+i*1.7);
+    const r=(2.0+(i%4)*.9)*Math.max(.88,seg.boost)*sizeMul;
+    ctx.beginPath();ctx.arc(q.x,q.y,r,0,Math.PI*2);
+    ctx.fillStyle=i%4===0?'#ffffff':i%4===1?'#ffc9f1':i%4===2?'#9feaff':'#d9c2ff';
+    ctx.globalAlpha=(.34+.58*tw)*alphaMul;ctx.fill();
+  }
+  function halo(p,now,phase,rad=60,scale=1){
+    const beat=.78+.22*Math.sin(now*.004+phase);
+    const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,rad*scale);
+    g.addColorStop(0,`rgba(255,255,255,${.30*beat})`);
+    g.addColorStop(.22,`rgba(255,212,244,${.21*beat})`);
+    g.addColorStop(.48,`rgba(144,221,255,${.15*beat})`);
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;ctx.globalAlpha=1;ctx.beginPath();ctx.arc(p.x,p.y,rad*scale,0,Math.PI*2);ctx.fill();
+  }
+  function burstAtMid(now,amount){
+    const a=clamp(amount,0,1);if(a<=0)return;
+    // Minimal closure flash only: a small soft light burst at the meeting point,
+    // with no geometric shape left behind.
+    const pulse=.78+.22*Math.sin(now*.01);
+    const core=ctx.createRadialGradient(P.mid.x,P.mid.y,0,P.mid.x,P.mid.y,34+28*a);
+    core.addColorStop(0,`rgba(255,255,255,${.88*a*pulse})`);
+    core.addColorStop(.24,`rgba(255,234,178,${.56*a})`);
+    core.addColorStop(.54,`rgba(255,198,240,${.28*a})`);
+    core.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=core;ctx.globalAlpha=1;ctx.beginPath();ctx.arc(P.mid.x,P.mid.y,34+28*a,0,Math.PI*2);ctx.fill();
+  }
+  function sealBeam(now,amount){
+    // No persistent center shape here; keep the closure moment clean.
+  }
+  function triangleShell(now,amount){
+    const a=clamp(amount,0,1);if(a<=0)return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(P.top.x,P.top.y);
+    ctx.quadraticCurveTo(874,1142,P.left.x,P.left.y);
+    ctx.quadraticCurveTo(P.mid.x,1248,P.right.x,P.right.y);
+    ctx.quadraticCurveTo(1158,1144,P.top.x,P.top.y);
+    ctx.closePath();
+    ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=18+10*a;ctx.strokeStyle='rgba(171,131,255,.18)';ctx.globalAlpha=.38*a;ctx.stroke();
+    ctx.lineWidth=9+5*a;ctx.strokeStyle='rgba(255,229,168,.22)';ctx.globalAlpha=.34*a;ctx.stroke();
+    ctx.restore();
+  }
+  function triangleFlash(now,amount){
+    const a=clamp(amount,0,1);if(a<=0)return;
+    // Brief closure flash: make the whole triangle glow for about a second,
+    // then let it fall back to the normal three-way feed.
+    strokeSeg(segTopLeft,now,1,.90,.22*a,1.22);
+    strokeSeg(segTopRight,now,1,.90,.22*a,1.22);
+    strokeSeg(segBottomLeft,now,1,1.00,.28*a,1.28);
+    strokeSeg(segBottomRight,now,1,1.00,.28*a,1.28);
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(P.top.x,P.top.y);
+    ctx.quadraticCurveTo(874,1142,P.left.x,P.left.y);
+    ctx.quadraticCurveTo(P.mid.x,1248,P.right.x,P.right.y);
+    ctx.quadraticCurveTo(1158,1144,P.top.x,P.top.y);
+    ctx.closePath();
+    ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.lineWidth=34;ctx.strokeStyle='rgba(255,255,255,.18)';ctx.globalAlpha=.55*a;ctx.stroke();
+    ctx.lineWidth=18;ctx.strokeStyle='rgba(255,233,176,.16)';ctx.globalAlpha=.48*a;ctx.stroke();
+    ctx.restore();
+  }
+  function frame(now){
+    ctx.clearRect(0,0,W,H);
+    if(state.power&&state.triangleReadyAt&&now>=state.triangleReadyAt){
+      const buildMs=3000;
+      const rawProgress=clamp((now-state.triangleReadyAt)/buildMs,0,1);
+      const progress=rawProgress<=0?0:Math.max(.04,rawProgress);
+      if(rawProgress>=1&&state.power&&!state.triangleClosedAt)state.triangleClosedAt=now;
+      const afterClose=state.triangleClosedAt?clamp((now-state.triangleClosedAt)/1100,0,1):0;
+      const meetAmount=rawProgress<.90?0:clamp((rawProgress-.90)/.10,0,1);
+      const triangleLinked=rawProgress>=1;
+      const topAlpha=triangleLinked ? .74 : .56;
+      const topWidth=triangleLinked ? .98 : .90;
+      const topPacketSize=triangleLinked ? 1.05 : .98;
+      const topPacketCount=triangleLinked ? 20 : 22;
+      ctx.save();ctx.globalCompositeOperation='screen';
+
+      // Seamless hand-off from the initial strong charge into the permanent source feed.
+      // triangleReadyAt is intentionally 500 ms before pulseEnergy ends, so this fades in
+      // under the outgoing strong current and prevents any visible interruption.
+      const sourceFeedIn=clamp((now-state.triangleReadyAt)/500,0,1);
+      const sourceAlpha=(triangleLinked ? .76 : .92)*sourceFeedIn;
+      const sourceWidth=(triangleLinked ? 1.00 : 1.08);
+      const sourcePacketSize=(triangleLinked ? 1.05 : 1.08);
+      strokeSeg(segSourceTop,now,1,.92,sourceAlpha,sourceWidth);
+      const sourcePacketCount=triangleLinked ? 18 : 14;
+      for(let i=0;i<sourcePacketCount;i++){
+        const t=((now*.00018)+(i/sourcePacketCount))%1;
+        packet(segSourceTop,t,now,i+220,sourcePacketSize,sourceFeedIn);
+      }
+      // Keep the source glow restrained: the stream should look as though it emerges
+      // from inside/behind the diamond, not from a separate glowing object.
+      if(sourceFeedIn>0)halo(P.source,now,4.1,42,.54*sourceFeedIn);
+
+      // After the triangle closes, the feed from above does not stop.
+      // It simply relaxes into the same magical current language as the rest of the triangle.
+      strokeSeg(segTopLeft,now,1,.95,topAlpha,topWidth);strokeSeg(segTopRight,now,1,.95,topAlpha,topWidth);
+      // The lower side grows immediately when energy reaches the panel centers — no dead pause.
+      strokeSeg(segBottomLeft,now,progress,1.04,.76,1.00);strokeSeg(segBottomRight,now,progress,1.04,.76,1.00);
+
+      // Top-to-panel flow continues permanently. Once the triangle is closed,
+      // these two branches switch to the same enchanted stream style as the lower side.
+      for(let i=0;i<topPacketCount;i++){
+        const t=((now*.00018)+(i/topPacketCount))%1;packet(segTopLeft,t,now,i,topPacketSize);packet(segTopRight,t,now,i+30,topPacketSize);
+      }
+
+      // The moment the side is allowed to grow, a leading head is always visible — giving direct continuity.
+      if(progress>0){
+        packet(segBottomLeft,progress,now,400,1.55);packet(segBottomRight,progress,now,401,1.55);
+      }
+      for(let i=0;i<20;i++){
+        const local=((now*.00018)+(i/20))%1;
+        if(local<=progress){packet(segBottomLeft,local,now,i+60,1.05);packet(segBottomRight,local,now,i+90,1.05);}
+      }
+
+      // Closure moment: a stronger, more satisfying lock at the exact center below the connector.
+      if(rawProgress>=1){
+        const flashAmount=Math.max(0,1-afterClose);
+        for(let i=0;i<14;i++){
+          const out=((now*.00022)+(i/14))%1;
+          packet(segBottomLeft,1-out,now,i+130,.92);packet(segBottomRight,1-out,now,i+150,.92);
+        }
+        burstAtMid(now,1-afterClose*.10);
+        sealBeam(now,1-afterClose*.08);
+        triangleShell(now,1.15);
+        triangleFlash(now,flashAmount);
+      }else{
+        if(meetAmount>0){burstAtMid(now,meetAmount*.95);sealBeam(now,meetAmount*.85);}
+        if(rawProgress>.68)triangleShell(now,clamp((rawProgress-.68)/.32,0,1)*.88);
+      }
+
+      halo(P.top,now,0,64,.98);halo(P.left,now,1.8,62,.98);halo(P.right,now,3.4,62,.98);
+      if(rawProgress>.10)halo(P.mid,now,2.6,48,.52+.48*meetAmount);
+      ctx.restore();
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+
+// Panel cinematic motion: the frame and base image never move. Only light, trail and sparkle overlays animate after charging.
+function panelMotion(t){
+  for(const [id,key] of [['familyPanel','family'],['carPanel','car']]){
+    const host=$(id),cv=host.querySelector('canvas'),ctx=cv.getContext('2d');
+    ctx.clearRect(0,0,cv.width,cv.height);if(!state.power)continue;
+    const live=state.charged?1:.62;ctx.save();ctx.globalCompositeOperation='screen';
+    if(key==='family'){
+        // New family art is static; legacy spiral overlays intentionally retired.
+        ctx.restore(); continue;
+      // clearly moving coordinate-system trail: moving comets travel along the existing spiral
+      const center={x:1168,y:665};
+      for(let band=0;band<3;band++){
+        ctx.beginPath();
+        for(let j=0;j<118;j++){const u=j/117,ang=u*Math.PI*6.5-t*.00125+band*.18,rad=255*(1-u*.62),x=center.x+Math.cos(ang)*rad,y=center.y+Math.sin(ang)*rad*.52-u*178;if(j===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
+        ctx.lineCap='round';ctx.lineWidth=(8-band*2)*live;ctx.strokeStyle=band===0?'rgba(151,103,255,.16)':band===1?'rgba(114,222,255,.20)':'rgba(255,237,158,.25)';ctx.globalAlpha=.74;ctx.stroke();
+      }
+      // luminous packets running along the spiral itself
+      for(let i=0;i<28;i++){const u=((t*.00019+i/28)%1),ang=u*Math.PI*6.5-t*.00125,rad=255*(1-u*.62),x=center.x+Math.cos(ang)*rad,y=center.y+Math.sin(ang)*rad*.52-u*178;const r=2.4+(i%4)*.9;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=i%4===0?'#fff3ae':i%3===0?'#9eeaff':'#d7b8ff';ctx.globalAlpha=(.25+.42*(1-u))*live;ctx.fill()}
+      // energy rising from the platform
+      for(let i=0;i<22;i++){const u=((t*.00024+i*.071)%1),x=1160+Math.sin(u*13+i)*115*(1-u*.35),y=770-u*480;ctx.beginPath();ctx.arc(x,y,1.8+(i%5)*.65,0,Math.PI*2);ctx.fillStyle=i%3===0?'#9feaff':'#ffe7a0';ctx.globalAlpha=(1-u)*.32*live;ctx.fill()}
+      const sweepX=720+((t*.13)%850);const g=ctx.createLinearGradient(sweepX-140,0,sweepX+140,0);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.48,'rgba(255,239,176,.18)');g.addColorStop(.56,'rgba(157,125,255,.14)');g.addColorStop(1,'rgba(255,255,255,0)');ctx.globalAlpha=.72*live;ctx.fillStyle=g;ctx.fillRect(760,170,760,690);
+    }else{
+      // road streams move from right to left so the stationary car reads as driving forward
+      for(let i=0;i<24;i++){const u=((t*.00034+i*.049)%1),x=1500-u*1180,y=650+Math.sin(i*1.07)*92;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+205,y-18);ctx.lineWidth=3.5+(i%4)*1.2;ctx.strokeStyle=i%4===0?'#fff0a8':i%3===0?'#a8ebff':'#c9b2ff';ctx.globalAlpha=(.07+.14*(1-u))*live;ctx.stroke()}
+      // visible spinning energy on the actual exposed wheel (roughly x560,y585 in the 1920x1080 source)
+      const wx=565,wy=590,rot=t*.0105;
+      for(let ring=0;ring<3;ring++){ctx.beginPath();ctx.arc(wx,wy,50+ring*7,0,Math.PI*2);ctx.lineWidth=3-ring*.5;ctx.strokeStyle=ring===0?'rgba(255,230,126,.26)':ring===1?'rgba(128,223,255,.20)':'rgba(187,132,255,.16)';ctx.globalAlpha=.75*live;ctx.stroke()}
+      for(let i=0;i<10;i++){const a=rot+i*Math.PI/5,r1=20,r2=56;ctx.beginPath();ctx.moveTo(wx+Math.cos(a)*r1,wy+Math.sin(a)*r1);ctx.lineTo(wx+Math.cos(a)*r2,wy+Math.sin(a)*r2);ctx.lineWidth=i%2?2:3.5;ctx.strokeStyle=i%2?'rgba(159,226,255,.30)':'rgba(255,239,166,.34)';ctx.globalAlpha=.65*live;ctx.stroke()}
+      // suspension/body rhythm and travelling reflections across the blue body
+      const bob=Math.sin(t*.009)*3.2,shineX=610+((t*.20)%690);const g2=ctx.createLinearGradient(shineX-110,0,shineX+110,0);g2.addColorStop(0,'rgba(255,255,255,0)');g2.addColorStop(.44,'rgba(138,218,255,.18)');g2.addColorStop(.52,'rgba(255,246,198,.23)');g2.addColorStop(1,'rgba(255,255,255,0)');ctx.globalAlpha=.76*live;ctx.fillStyle=g2;ctx.fillRect(470,345+bob,820,360);
+      // luminous wake emerging behind the car
+      for(let j=0;j<4;j++){ctx.beginPath();ctx.moveTo(350,610+j*15);ctx.bezierCurveTo(420,590+j*12,470,610+j*8,545,625+j*5);ctx.lineCap='round';ctx.lineWidth=9-j*1.5;ctx.strokeStyle=j%2?'rgba(122,218,255,.18)':'rgba(184,124,255,.15)';ctx.globalAlpha=.72*live;ctx.stroke()}
+      // recurring star glints on the car body
+      for(const [gx,gy,ph] of [[1035,468,0],[1112,566,1.5],[760,526,2.7]]){const pulse=Math.max(0,Math.sin(t*.0044+ph));if(pulse<=0)continue;const r=10+22*pulse;const g=ctx.createRadialGradient(gx,gy,0,gx,gy,r);g.addColorStop(0,`rgba(255,250,218,${.48*pulse})`);g.addColorStop(.45,`rgba(156,225,255,${.18*pulse})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.globalAlpha=live;ctx.beginPath();ctx.arc(gx,gy,r,0,Math.PI*2);ctx.fill()}
+    }
+    ctx.restore();
+  }
+  requestAnimationFrame(panelMotion);
+}
+requestAnimationFrame(panelMotion);
+function idleConnectorMagic(now){
+  const cv=$('energyCanvas'),ctx=cv.getContext('2d');
+  if(state.power||state.connecting){requestAnimationFrame(idleConnectorMagic);return}if(!paramsReady()){ctx.clearRect(0,0,W,H);requestAnimationFrame(idleConnectorMagic);return}
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.globalCompositeOperation='screen';
+  ctx.filter='brightness(1.5) saturate(1.18)';
+  const socketBody={x:918,y:1084},plugBody={x:1118,y:1085};
+  const socketInner={x:966,y:1080},plugInner={x:1068,y:1079};
+  const mid={x:1017,y:1081};
+  const t=now*.001;
+
+  function cloud(x,y,r,stops){
+    const g=ctx.createRadialGradient(x,y,0,x,y,r);
+    for(const stop of stops)g.addColorStop(stop[0],stop[1]);
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  }
+  function smokyBridge(seed,amp,width,color,alpha,lift=0){
+    ctx.beginPath();
+    for(let i=0;i<=64;i++){
+      const u=i/64;
+      const x=socketInner.x+(plugInner.x-socketInner.x)*u;
+      const baseY=socketInner.y+(plugInner.y-socketInner.y)*u-lift*Math.sin(u*Math.PI);
+      const sway=Math.sin(u*6.283+seed+t*1.45)*amp + Math.sin(u*12.566-seed*1.2+t*.92)*amp*.55;
+      const y=baseY+sway;
+      if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=width;ctx.strokeStyle=color;ctx.globalAlpha=alpha;ctx.stroke();
+  }
+  function bodyRibbon(cx,cy,rx,ry,seed,width,color,alpha){
+    ctx.beginPath();
+    for(let i=0;i<=72;i++){
+      const u=i/72*Math.PI*2;
+      const wob=1+0.08*Math.sin(t*1.8+seed+u*3.7)+0.04*Math.sin(t*2.6-seed+u*7.2);
+      const x=cx+Math.cos(u+Math.sin(t*1.1+seed)*.12)*rx*wob;
+      const y=cy+Math.sin(u+t*.16+seed*.3)*ry*wob;
+      if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=width;ctx.strokeStyle=color;ctx.globalAlpha=alpha;ctx.stroke();
+  }
+  function tendril(from,to,seed,width,color,alpha,bow=22){
+    ctx.beginPath();
+    for(let i=0;i<=36;i++){
+      const u=i/36;
+      const x=from.x+(to.x-from.x)*u;
+      const curve=Math.sin(u*Math.PI)*(bow+6*Math.sin(t*1.8+seed));
+      const jitter=Math.sin(u*10.5+t*1.2+seed)*4 + Math.sin(u*18.5-t*.9+seed)*2.2;
+      const y=from.y+(to.y-from.y)*u + curve + jitter;
+      if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=width;ctx.strokeStyle=color;ctx.globalAlpha=alpha;ctx.stroke();
+  }
+  function sparkleRing(cx,cy,rx,ry,count,phase,alpha){
+    for(let i=0;i<count;i++){
+      const a=phase+i*Math.PI*2/count;
+      const x=cx+Math.cos(a)*rx;
+      const y=cy+Math.sin(a)*ry;
+      const r=1.8+(i%4)*.75;
+      ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.fillStyle=i%5===0?'#fff6d0':i%4===0?'#ffd6f3':i%3===0?'#a7ebff':'#dcc8ff';
+      ctx.globalAlpha=alpha*(.55+.45*Math.sin(t*3.8+i));ctx.fill();
+    }
+  }
+
+  cloud(socketBody.x-4,socketBody.y+1,92,[[0,'rgba(255,232,173,0.18)'],[.18,'rgba(223,190,255,0.18)'],[.42,'rgba(130,216,255,0.10)'],[1,'rgba(0,0,0,0)']]);
+  cloud(plugBody.x+2,plugBody.y,96,[[0,'rgba(255,214,243,0.19)'],[.2,'rgba(149,226,255,0.17)'],[.45,'rgba(224,193,255,0.10)'],[1,'rgba(0,0,0,0)']]);
+  cloud(mid.x,mid.y-2,114,[[0,'rgba(255,236,180,0.11)'],[.24,'rgba(231,193,255,0.13)'],[.46,'rgba(129,220,255,0.09)'],[1,'rgba(0,0,0,0)']]);
+  cloud(socketBody.x-34,socketBody.y-16,135,[[0,'rgba(176,124,255,0.06)'],[.38,'rgba(120,211,255,0.05)'],[1,'rgba(0,0,0,0)']]);
+  cloud(plugBody.x+34,plugBody.y-12,135,[[0,'rgba(255,194,238,0.06)'],[.38,'rgba(255,232,173,0.05)'],[1,'rgba(0,0,0,0)']]);
+
+  bodyRibbon(socketBody.x,socketBody.y,74,44,.2,22,'rgba(146,108,255,0.12)',.95);
+  bodyRibbon(socketBody.x,socketBody.y,60,34,1.3,13,'rgba(255,203,241,0.16)',.92);
+  bodyRibbon(socketBody.x,socketBody.y,48,26,2.6,7,'rgba(140,231,255,0.20)',.9);
+  bodyRibbon(plugBody.x,plugBody.y,84,48,.7,24,'rgba(140,231,255,0.12)',.95);
+  bodyRibbon(plugBody.x,plugBody.y,68,38,1.8,14,'rgba(214,179,255,0.16)',.92);
+  bodyRibbon(plugBody.x,plugBody.y,54,29,3.1,7.5,'rgba(255,223,176,0.20)',.92);
+
+  tendril({x:socketBody.x-34,y:socketBody.y-24},mid,.5,10,'rgba(206,175,255,0.13)',.82,-24);
+  tendril(mid,{x:socketBody.x-18,y:socketBody.y+26},1.7,6,'rgba(255,220,178,0.16)',.74,18);
+  tendril({x:plugBody.x+38,y:plugBody.y-18},mid,2.2,10,'rgba(129,226,255,0.13)',.82,-26);
+  tendril(mid,{x:plugBody.x+16,y:plugBody.y+28},3.4,6,'rgba(255,198,240,0.16)',.74,20);
+  tendril({x:socketBody.x+18,y:socketBody.y+4},{x:plugBody.x-20,y:plugBody.y+2},4.1,16,'rgba(157,114,255,0.12)',.92,-10);
+  tendril({x:socketBody.x+12,y:socketBody.y-10},{x:plugBody.x-16,y:plugBody.y-8},5.1,11,'rgba(118,224,255,0.15)',.94,8);
+  tendril({x:socketBody.x+9,y:socketBody.y+18},{x:plugBody.x-12,y:plugBody.y+18},5.8,7,'rgba(255,210,179,0.18)',.84,15);
+
+  smokyBridge(.2,10.5,30,'rgba(149,110,255,0.12)',.96,6);
+  smokyBridge(1.6,8.6,22,'rgba(114,223,255,0.15)',.92,14);
+  smokyBridge(3.1,6.8,15,'rgba(255,193,238,0.17)',.9,0);
+  smokyBridge(4.8,4.5,8,'rgba(255,236,183,0.19)',.86,-10);
+  smokyBridge(5.9,2.8,3.6,'rgba(255,255,255,0.92)',.58,3);
+
+  sparkleRing(socketBody.x,socketBody.y,72,42,20,t*.85,.18);
+  sparkleRing(plugBody.x,plugBody.y,80,46,20,-t*.88,.18);
+  sparkleRing(mid.x,mid.y,60,26,16,t*1.1,.14);
+  for(let i=0;i<34;i++){
+    const side=i<17?socketBody:plugBody;
+    const dir=i<17?-1:1;
+    const k=i%17;
+    const x=side.x + dir*(18+Math.sin(t*1.8+k)*36) + Math.cos(t*1.1+k*1.3)*10;
+    const y=side.y + Math.sin(t*1.4+k*1.1)*28;
+    const r=2.3+(i%4)*.8;
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle=i%5===0?'#fff3c8':i%4===0?'#ffd2f2':i%3===0?'#9eeaff':'#d7c1ff';
+    ctx.globalAlpha=.10+.12*(.5+.5*Math.sin(t*3.2+i));ctx.fill();
+  }
+
+  ctx.restore();
+  requestAnimationFrame(idleConnectorMagic);
+}
+requestAnimationFrame(idleConnectorMagic);
+// Ambient: background is fully static. Only the purple flag fabric waves; poles and gold hardware never move.
+const amb=$('ambientCanvas'),actx=amb.getContext('2d'),bg=image('assets/background.png'),flagMask=image('assets/flag_fabric_mask.png'),flagLayer=document.createElement('canvas');
+flagLayer.width=W;flagLayer.height=H;const fctx=flagLayer.getContext('2d');
+let flagsReady=false;
+function buildFlagLayer(){
+  if(flagsReady||!bg.complete||!flagMask.complete||!bg.naturalWidth||!flagMask.naturalWidth)return;
+  fctx.clearRect(0,0,W,H);fctx.drawImage(bg,0,0,W,H);fctx.globalCompositeOperation='destination-in';fctx.drawImage(flagMask,0,0,W,H);fctx.globalCompositeOperation='source-over';flagsReady=true;
+}
+function ambient(now){
+  actx.clearRect(0,0,W,H);buildFlagLayer();
+  if(flagsReady){
+    for(const [x,y,w,h,dir,phase] of [[0,152,95,318,1,0],[1954,152,94,316,-1,.65]]){
+      for(let sy=0;sy<h;sy+=1){
+        const rel=sy/h;
+        const envelope=Math.sin(Math.PI*Math.min(1,rel*1.08));
+        const wave=Math.sin(now*.00105+phase+rel*4.15)+.28*Math.sin(now*.00172+phase*.7+rel*7.1);
+        const dx=wave*8.85*envelope*dir;
+        const dy=Math.sin(now*.00092+phase+rel*3.1)*.825*envelope;
+        actx.drawImage(flagLayer,x,y+sy,w,1,x+dx,y+sy+dy,w,1.15);
+      }
+    }
+  }
+  requestAnimationFrame(ambient);
+}
+requestAnimationFrame(ambient);
+// Receiving a function from the axes or the composition is a real already-connected
+// scene state, not a second simulation of the socket or the animation.
+function lastExternalFunctionFromHub(){
+ let hub;try{hub=JSON.parse(localStorage.getItem('mamlachat.functionHub.v1')||'null')}catch(_){return null}
+ if(!hub?.expression||String(hub.expression).length>400)return null;
+ const origin=String(hub.source||'');
+ // Original initial axes function and cylinder's own selections must not
+ // silently energize a clean first load of the main page.
+ if(!(/^(axes|function-composition|url|composition)/.test(origin)))return null;
+ if(!Number(hub.revision||0)&&!Number(hub.updatedAt||0))return null;
+ return {expression:String(hub.expression),display:String(hub.display||'')};
+}
+function readReturnFunction(){
+ const q=new URLSearchParams(location.search),origin=q.get('fromKingdom');
+ const explicit=q.get('f');
+ if(explicit&&explicit.length<=400 && (origin==='axes'||origin==='composition'||q.get('connect')==='1')){
+  return {expression:String(explicit).replace(/^\s*(?:f\s*\(\s*x\s*\)|y)\s*=\s*/i,''),display:q.get('display')||''};
+ }
+ if(origin==='axes'||origin==='composition'||!origin){
+  const last=lastExternalFunctionFromHub();
+  if(last)return last;
+ }
+ return null;
+}
+function polynomialOf(raw){
+ let s=String(raw||'').replace(/\s+/g,'').replace(/−/g,'-').replace(/²/g,'^2').replace(/\*/g,'');
+ // Never silently interpret a radical, absolute value, rational function or
+ // higher-order polynomial as a straight line or parabola.
+ if(!/^[\d.x^+\-/]+$/i.test(s)||/x\^(?!2(?:[+\-]|$))/.test(s)||/\/x/.test(s))return null;
+ if(!s||/[+\-]$/.test(s))return null;
+ const terms=s.replace(/-/g,'+-').split('+').filter(Boolean),coeff={a:0,m:0,b:0};
+ if(!terms.length)return null;
+ const num=t=>{if(t===''||t==='+')return 1;if(t==='-')return -1;if(t.includes('/')){const parts=t.split('/');if(parts.length!==2)return NaN;const a=Number(parts[0]),b=Number(parts[1]);return b===0?NaN:a/b}return Number(t)};
+ for(let term of terms){let prop='b',part=term;
+  if(term.endsWith('x^2')){prop='a';part=term.slice(0,-3)}
+  else if(term.endsWith('x')){prop='m';part=term.slice(0,-1)}
+  else if(term.includes('x')||term.includes('^'))return null;
+  const n=num(part);if(!Number.isFinite(n))return null;coeff[prop]+=n;
+ }
+ if(!Object.values(coeff).every(Number.isFinite))return null;
+ return Math.abs(coeff.a)>1e-12?{type:'quadratic',a:coeff.a,b:coeff.m,c:coeff.b}:{type:'linear',m:coeff.m,b:coeff.b};
+}
+function prettyReturnFunction(expr,display){
+ let s=String(expr||display).trim().replace(/^\s*(?:f\s*\(\s*x\s*\)|y)\s*=\s*/i,'');
+ s=s.replace(/\s*\*\s*/g,'').replace(/\^2/g,'²').replace(/\^3/g,'³').replace(/−/g,'-').replace(/\+\s*-/g,'-').replace(/-\s*-/g,'+').replace(/\+0(?=($|[^0-9]))/g,'');
+ s=s.replace(/(^|[+\-])1x(?=[²³]|[^\w]|$)/g,'$1x');
+ return 'f(x) = '+s;
+}
+function formatReturnedPolynomial(poly){
+ const parts=[];
+ const add=(coef,variable)=>{
+  const n=Number(coef),nearZero=Math.abs(n)<1e-12;if(nearZero)return;
+  const abs=Math.abs(n),magnitude=variable&&Math.abs(abs-1)<1e-12?'':String(abs);
+  parts.push((parts.length?(n<0?'-':'+'):(n<0?'-':''))+magnitude+variable);
+ };
+ if(poly.type==='quadratic'){add(poly.a,'x²');add(poly.b,'x');add(poly.c,'')}
+ else{add(poly.m,'x');add(poly.b,'')}
+ return (poly.type==='linear'?'y = ':'f(x) = ')+(parts.join('')||'0');
+}
+function restoreAlreadyConnected(passedFunction){
+ const incoming=passedFunction||readReturnFunction();if(!incoming)return false;
+ if(state.returnDisconnectedExpression && incoming.expression===state.returnDisconnectedExpression)return false;
+ state.returnDisconnectedExpression=null;
+ const poly=polynomialOf(incoming.expression);
+ state.importedF={expression:incoming.expression,display:poly?formatReturnedPolynomial(poly):prettyReturnFunction(incoming.expression,incoming.display),general:!poly};
+ if(poly){
+   state.family=poly.type==='quadratic'?'parabola':'linear';
+   const values=poly.type==='quadratic'?{a:poly.a,b:poly.b,c:poly.c}:{m:poly.m,b:poly.b};
+   const group=state.family==='parabola'?state.parabola:state.linear;
+   const elementNames=state.family==='parabola'?{a:'aDial',b:'pbDial',c:'cDial'}:{m:'mDial',b:'bDial'};
+   for(const [key,number] of Object.entries(values)){
+     const param=group[key];param.active=true;param.value=String(number);param.visual=number;
+     renderNeedle($(elementNames[key]),number);
+   }
+ }
+ synchronizeNeedlesWithPage(!poly?'general':state.family==='parabola'?'quadratic':'linear');
+ window.__ROYAL_PLAY_SET_PAGE__?.(!poly?'general':state.family==='parabola'?'quadratic':'linear');
+ stage.classList.remove('return-snapshot');
+ renderFormula();
+ restoreCylinderView();
+ // Exactly the same locked/charged state as after a completed manual plug-in.
+ state.power=true;state.charged=true;state.connecting=false;
+ state.triangleReadyAt=performance.now()-5500;
+ state.triangleClosedAt=performance.now()-2000;
+ socket.classList.add('hidden');plug.classList.add('hidden');
+ socket.classList.remove('connecting');plug.classList.remove('connecting');
+ connector.style.display='block';connector.classList.remove('energizing');
+ familyPanel.classList.add('powered');carPanel.classList.add('powered');
+ updateReady();
+ return true;
+}
+window.__MAMLACHAT_PLAY_APPLY_FROM_CALCULATOR__=(raw)=>{
+ const clean=String(raw||'').trim();
+ if(!clean||clean.length>300||!/^[0-9a-zA-Z+*/().,^|\s\u2212\u03c0\u221a\u00b2\u00b3-]+$/.test(clean))throw new Error('יש להזין ביטוי מתמטי תקין.');
+ let balance=0;for(const ch of clean){if(ch==='(')balance++;if(ch===')'&&--balance<0)break;}if(balance!==0)throw new Error('יש לבדוק את הסוגריים בפונקציה.');
+ const poly=polynomialOf(clean);
+ const expression=poly?(poly.type==='quadratic'?`${poly.a}*x^2+${poly.b}*x+${poly.c}`:`${poly.m}*x+${poly.b}`):clean;
+ const display=poly?formatReturnedPolynomial(poly):prettyReturnFunction(expression,expression);
+ // The cylinder is a display/publisher, never a second graph/ride engine.
+ const payload={schemaVersion:1,revision:Date.now(),expression,display,source:'cylinder-master',updatedAt:Date.now()};
+ localStorage.setItem('mamlachat.functionHub.v1',JSON.stringify(payload));
+ state.importedF=null;state.returnDisconnectedExpression=null;
+ if(!restoreAlreadyConnected({expression,display}))throw new Error('לא ניתן לעדכן את הגליל.');
+ return true;
+};
+window.__MAMLACHAT_PLAY_STATUS__=()=>({power:state.power,charged:state.charged,formula:state.importedF?.display||null,general:!!state.importedF?.general,mode:state.family,triangleReadyAt:state.triangleReadyAt,plugClosed:connector.style.display==='block',panelsPowered:familyPanel.classList.contains('powered')&&carPanel.classList.contains('powered'),imported:!!state.importedF});
+
+renderFormula();updateReady();restoreAlreadyConnected();
+// Returning to a still-open PLAY tab through the browser Back button or tab switch:
+// import only a newer externally chosen function. Do not re-publish a stale dial value.
+function syncReturnedKingdomOnFocus(){
+ const last=lastExternalFunctionFromHub();if(!last)return;
+ let hub;try{hub=JSON.parse(localStorage.getItem('mamlachat.functionHub.v1')||'null')}catch(_){return}
+ const expression=String(last.expression).trim();
+ if(state.importedF?.expression===expression&&state.power)return;
+ restoreAlreadyConnected({expression,display:hub.display||'f(x)='+expression});
+}
+window.addEventListener('pageshow',e=>{if(e.persisted)syncReturnedKingdomOnFocus()});
+window.addEventListener('focus',syncReturnedKingdomOnFocus);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncReturnedKingdomOnFocus()});
+window.addEventListener('storage',e=>{if(e.key==='mamlachat.functionHub.v1'&&!document.hidden)syncReturnedKingdomOnFocus()});
+})();
+</script>
+
+
+<script id="playExportRuntime">(()=>{'use strict';
+const CFG={"background":{"id":"background","name":"רקע","x":0,"y":0,"w":2048,"h":1536,"z":0,"opacity":100,"brightness":null,"visible":true,"locked":true,"hoverEnabled":false,"hoverBright":106,"hoverGlow":14,"hoverScale":1.2,"hoverSpeed":240,"hoverColor1":"#ffe6a0","hoverColor2":"#ae7eff","link":"","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"title":{"id":"title","name":"כותרת","x":612,"y":54,"w":664,"h":216,"z":63,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":false,"hoverBright":106,"hoverGlow":14,"hoverScale":1.2,"hoverSpeed":240,"hoverColor1":"#ffe6a0","hoverColor2":"#ae7eff","link":"","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"bereshit":{"id":"bereshit","name":"בראשית","x":712,"y":99,"w":620,"h":465,"z":61,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":true,"hoverBright":112,"hoverGlow":28,"hoverScale":1.8,"hoverSpeed":280,"hoverColor1":"#fff0fa","hoverColor2":"#ad78ff","link":"","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"bereshitHit":{"id":"bereshitHit","name":"אזור לחיץ — בראשית","x":712,"y":99,"w":620,"h":251,"z":62,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":false,"hoverBright":106,"hoverGlow":14,"hoverScale":1.2,"hoverSpeed":240,"hoverColor1":"#ffe6a0","hoverColor2":"#ae7eff","link":"https://idanahvan.my.canva.site/funki-kingdom","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":true},"axes":{"id":"axes","name":"חלונית מערכת צירים","x":491,"y":433,"w":331,"h":207,"z":34,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":true,"hoverBright":100,"hoverGlow":14,"hoverScale":1.5,"hoverSpeed":240,"hoverColor1":"#ffe6a0","hoverColor2":"#ae7eff","link":"מתחם הפונקציה- קומפוזיציה.html?lesson=axes","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"table":{"id":"table","name":"חלונית טבלת ערכים","x":822,"y":424,"w":401,"h":251,"z":89,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":true,"hoverBright":100,"hoverGlow":14,"hoverScale":1.5,"hoverSpeed":240,"hoverColor1":"#ffe6a0","hoverColor2":"#ae7eff","link":"מתחם הפונקציה- קומפוזיציה.html?lesson=table","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"tableHit":{"id":"tableHit","name":"אזור לחיץ — טבלת ערכים","x":822,"y":350,"w":401,"h":325,"z":90,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":false,"hoverBright":106,"hoverGlow":14,"hoverScale":1.2,"hoverSpeed":240,"hoverColor1":"#ffe6a0","hoverColor2":"#ae7eff","link":"מתחם הפונקציה- קומפוזיציה.html?lesson=table","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":true},"castle":{"id":"castle","name":"חלונית קלט/פלט","x":1203,"y":406,"w":382,"h":239,"z":34,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":true,"hoverBright":100,"hoverGlow":14,"hoverScale":1.5,"hoverSpeed":240,"hoverColor1":"#ffe6a0","hoverColor2":"#ae7eff","link":"מתחם הפונקציה- קומפוזיציה.html?lesson=basic","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"scroll":{"id":"scroll","name":"גליל","x":290,"y":614,"w":1479,"h":330,"z":64,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":true,"hoverBright":109,"hoverGlow":26,"hoverScale":0.8,"hoverSpeed":250,"hoverColor1":"#ffe9aa","hoverColor2":"#aa7cff","link":"","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"mDial":{"id":"mDial","name":"מחוג m — ישר","x":652,"y":827,"w":314,"h":314,"z":72,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":true,"hoverBright":108,"hoverGlow":20,"hoverScale":2.2,"hoverSpeed":220,"hoverColor1":"#ffecb2","hoverColor2":"#a474ff","link":"","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"bDial":{"id":"bDial","name":"מחוג b — ישר","x":1104,"y":838,"w":278,"h":278,"z":74,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":true,"hoverBright":108,"hoverGlow":20,"hoverScale":2.2,"hoverSpeed":220,"hoverColor1":"#ffecb2","hoverColor2":"#a474ff","link":"","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"aDial":{"id":"aDial","name":"מחוג a — פרבולה","x":608,"y":849,"w":255,"h":255,"z":78,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":true,"hoverBright":108,"hoverGlow":20,"hoverScale":2.2,"hoverSpeed":220,"hoverColor1":"#ffecb2","hoverColor2":"#a474ff","link":"","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"pbDial":{"id":"pbDial","name":"מחוג b — פרבולה","x":897,"y":869,"w":244,"h":244,"z":90,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":true,"hoverBright":108,"hoverGlow":20,"hoverScale":2.2,"hoverSpeed":220,"hoverColor1":"#ffecb2","hoverColor2":"#a474ff","link":"","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"cDial":{"id":"cDial","name":"מחוג c — פרבולה","x":1234,"y":868,"w":234,"h":234,"z":78,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":true,"hoverBright":108,"hoverGlow":20,"hoverScale":2.2,"hoverSpeed":220,"hoverColor1":"#ffecb2","hoverColor2":"#a474ff","link":"","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"socket":{"id":"socket","name":"שקע","x":825,"y":1009,"w":187,"h":151,"z":92,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":false,"hoverBright":106,"hoverGlow":14,"hoverScale":1.2,"hoverSpeed":240,"hoverColor1":"#ffe6a0","hoverColor2":"#ae7eff","link":"","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"plug":{"id":"plug","name":"תקע","x":1008,"y":998,"w":218,"h":176,"z":91,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":false,"hoverBright":106,"hoverGlow":14,"hoverScale":1.2,"hoverSpeed":240,"hoverColor1":"#ffe6a0","hoverColor2":"#ae7eff","link":"","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"connector":{"id":"connector","name":"חיבור נעול","x":840,"y":991,"w":354,"h":184,"z":93,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":false,"hoverBright":106,"hoverGlow":14,"hoverScale":1.2,"hoverSpeed":240,"hoverColor1":"#ffe6a0","hoverColor2":"#ae7eff","link":"","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"familyPanel":{"id":"familyPanel","name":"חלונית ממלכת הצירים","x":496,"y":1075,"w":467,"h":263,"z":68,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":false,"hoverBright":108,"hoverGlow":18,"hoverScale":2,"hoverSpeed":240,"hoverColor1":"#ffe6a0","hoverColor2":"#ae7eff","link":"ממלכת הצירים מושלם מסך מלא.html","linkTarget":"_blank","custom":false,"src":null,"hit":false},"carPanel":{"id":"carPanel","name":"חלונית מכונית","x":916,"y":986,"w":775,"h":435,"z":69,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":false,"hoverBright":106,"hoverGlow":14,"hoverScale":1.2,"hoverSpeed":240,"hoverColor1":"#ffe6a0","hoverColor2":"#ae7eff","link":"מתחם הפונקציה- קומפוזיציה.html","linkTarget":"_blank","dynamicFunctionApi":true,"custom":false,"src":null,"hit":false},"bsd":{"id":"bsd","name":"בס״ד","x":1838,"y":-1,"w":117,"h":39,"z":60,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":false,"hoverBright":106,"hoverGlow":14,"hoverScale":1.2,"hoverSpeed":240,"hoverColor1":"#ffe6a0","hoverColor2":"#ae7eff","link":"","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false},"signature":{"id":"signature","name":"חתימה","x":26,"y":1474,"w":219,"h":66,"z":60,"opacity":100,"brightness":null,"visible":true,"locked":false,"hoverEnabled":false,"hoverBright":106,"hoverGlow":14,"hoverScale":1.2,"hoverSpeed":240,"hoverColor1":"#ffe6a0","hoverColor2":"#ae7eff","link":"","linkTarget":"_blank","dynamicFunctionApi":false,"custom":false,"src":null,"hit":false}};
+const stage=document.getElementById('stage');
+function targetId(id){return id==='bereshitHit'?'bereshit':id==='tableHit'?'table':id}
+function cfgForVisual(id){return CFG[targetId(id)]||CFG[id]}
+function hover(id,on){if(id==='familyPanel')return;const tid=targetId(id),el=document.getElementById(tid),c=cfgForVisual(id);if(!el||!c)return;el.style.transition='transform '+c.hoverSpeed+'ms cubic-bezier(.2,.82,.2,1), filter '+c.hoverSpeed+'ms ease';if(on&&c.hoverEnabled){el.style.transform='scale('+(1+c.hoverScale/100)+')';el.style.filter='brightness('+c.hoverBright+'%) drop-shadow(0 0 '+c.hoverGlow+'px '+c.hoverColor1+') drop-shadow(0 0 '+Math.round(c.hoverGlow*1.45)+'px '+c.hoverColor2+')'}else{el.style.transform='';el.style.filter=c.brightness!==null?'brightness('+c.brightness+'%)':''}}
+for(const [id,c] of Object.entries(CFG)){const el=document.getElementById(id);if(!el)continue;el.addEventListener('pointerenter',()=>hover(id,true));el.addEventListener('pointerleave',()=>hover(id,false));if(id==='carPanel'&&c.dynamicFunctionApi)window.__FUNCTION_RIDE_PAGE='מתחם הפונקציה- קומפוזיציה.html';if(c.link||c.hoverEnabled||c.hit)el.style.pointerEvents='auto'}
+if(stage)stage.addEventListener('click',e=>{let t=e.target;while(t&&t!==stage&&!CFG[t.id])t=t.parentElement;if(!t||!CFG[t.id])return;const c=CFG[t.id==='table'?'tableHit':t.id];if(!c||!c.link)return;if(t.id==='familyPanel'&&!t.classList.contains('powered'))return;if(t.id==='familyPanel'){e.preventDefault();e.stopImmediatePropagation();window.__openFamilyAxesFromMaster?.(c.link,c.linkTarget||'_blank');return}if(t.id==='carPanel'&&c.dynamicFunctionApi){window.__FUNCTION_RIDE_PAGE='מתחם הפונקציה- קומפוזיציה.html';return}e.preventDefault();e.stopImmediatePropagation();window.open(c.link,c.linkTarget||'_blank',c.linkTarget==='_blank'?'noopener':'')},true);
+})();</script><script src="assets/royal_math_display.js" defer></script><script defer src="assets/royal_calculator_layout_controls.js"></script><script src="assets/royal_calculator_bridge.js" defer></script>
+</body></html>

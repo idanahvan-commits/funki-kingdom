@@ -1,0 +1,548 @@
+{
+  "source_html": "MAMLACHAT_AXES_MASTER_V17_ROYAL_PROPERTY_LAB_INTERACTIVE.html",
+  "output_html": "MAMLACHAT_AXES_MASTER_V17_CLEAN_ASSETS.html",
+  "base64_image_occurrences": 45,
+  "unique_image_assets": 44,
+  "assets": [
+    {
+      "occurrence": 1,
+      "asset": "property_tile.png",
+      "sha256": "1bb2e7eca4c1ae075a646680ef2beb50f8e14b5072b4458c027a23b789acafa9",
+      "bytes": 53435,
+      "dimensions": [
+        265,
+        135
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 2,
+      "asset": "property_tile.png",
+      "sha256": "1bb2e7eca4c1ae075a646680ef2beb50f8e14b5072b4458c027a23b789acafa9",
+      "bytes": 53435,
+      "dimensions": [
+        265,
+        135
+      ],
+      "format": "PNG",
+      "deduplicated": true
+    },
+    {
+      "occurrence": 3,
+      "asset": "scene_master.png",
+      "sha256": "9f94d295de19b5953949d39136bf8d7427d1bf55e0b812e14b950ffdb5835ceb",
+      "bytes": 3018259,
+      "dimensions": [
+        1672,
+        941
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 4,
+      "asset": "scene_master_invite_dimmed.png",
+      "sha256": "a7a8ee0d8621854b3647a7a8773fbb2da12b47a3fead05f3c27ea1d100c167ca",
+      "bytes": 3042155,
+      "dimensions": [
+        1672,
+        941
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 5,
+      "asset": "scene_master_adult_stages_dimmed.png",
+      "sha256": "5aad23d0c9efc29e763e3a1aed8e8095a5e80500dddbea8162993d92af673f0b",
+      "bytes": 3018239,
+      "dimensions": [
+        1672,
+        941
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 6,
+      "asset": "property_launcher.png",
+      "sha256": "7d8fc33e8f83a5f55d6ae8068ea9ca2ac52b3be6616e68f9fe57025849feae2c",
+      "bytes": 193233,
+      "dimensions": [
+        505,
+        195
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 7,
+      "asset": "property_panel.png",
+      "sha256": "bb7a8553f209546cf9646230b053815f8b315ffe2214dc2924551bf22e460dab",
+      "bytes": 1218081,
+      "dimensions": [
+        720,
+        1024
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 8,
+      "asset": "property_tray.png",
+      "sha256": "5c4e5a45d0a5d6379dbdba47004385ae7192cad9104871d43fe93d20c29e5ab2",
+      "bytes": 263061,
+      "dimensions": [
+        795,
+        260
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 9,
+      "asset": "function_plug_connected.png",
+      "sha256": "e1c56a4702392f4b500848895606fa5ba4c6204aaf4901c543ecea250e3c9699",
+      "bytes": 251286,
+      "dimensions": [
+        624,
+        320
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 10,
+      "asset": "function_socket.png",
+      "sha256": "4b3f7001739e9a90057b0eaf7086cf816969e9c34076c8d9470a30622b0ccdb6",
+      "bytes": 3095407,
+      "dimensions": [
+        2048,
+        1536
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 11,
+      "asset": "function_plug.png",
+      "sha256": "9780174518aba5b2c286db7ff1bf8f0c45d85da3e0d74660ff12c24c2c824323",
+      "bytes": 2411250,
+      "dimensions": [
+        2048,
+        1536
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 12,
+      "asset": "zoom_crystal.png",
+      "sha256": "e5853e011ab25a128ef2cf2763928c789d1c7bc08c0d745760541017e5f39a70",
+      "bytes": 1099908,
+      "dimensions": [
+        953,
+        1059
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 13,
+      "asset": "adult_idle_01.png",
+      "sha256": "2c68563711e99c647c34b142836623df641255eeb2cbd5c8aa6f5242e29109d8",
+      "bytes": 1250943,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 14,
+      "asset": "adult_idle_02.png",
+      "sha256": "4e5b7f49cfd5125920d2fa9cb209c055c5f21a1ed561b84dab8016d5a72bce5e",
+      "bytes": 1042259,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 15,
+      "asset": "adult_idle_03.png",
+      "sha256": "f8adb0f9337ae63c4534e7fb4cdb3391fa47a8435b1a1fb3e8993b1b74dafe84",
+      "bytes": 1017104,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 16,
+      "asset": "adult_idle_04.png",
+      "sha256": "c01dd69664fbb6305df35eccab4408f650b2d23db0c7769f03998e8602f4f9d0",
+      "bytes": 1040797,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 17,
+      "asset": "adult_idle_05.png",
+      "sha256": "26aacf006a26247b52fa1b0391586830a381b1fc47dab8647c772f119a424d61",
+      "bytes": 1374599,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 18,
+      "asset": "adult_idle_06.png",
+      "sha256": "600eb35dc3b0322672575cba579a40192c7bad58bbed1f532bca87a6cec7a717",
+      "bytes": 1188048,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 19,
+      "asset": "adult_idle_07.png",
+      "sha256": "ab6745313b51309bffff2256b86977ff1010b82f6920145c1bec3556e016ae0e",
+      "bytes": 973528,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 20,
+      "asset": "adult_idle_08.png",
+      "sha256": "6d622d40418acb408a5a3c3c33320b1d6172de2a63c07bd9a87e8ba9b7d8a167",
+      "bytes": 1041912,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 21,
+      "asset": "adult_idle_09.png",
+      "sha256": "f3883e42db8379c2b2edeba66024744a9faa131d27527c49eb329fef830eaf9d",
+      "bytes": 1023032,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 22,
+      "asset": "adult_idle_10.png",
+      "sha256": "1dbafb537a30214b1cc75ba6ecf0dc13277ba6aa24fcfe71360c98a61aec0fa2",
+      "bytes": 1029297,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 23,
+      "asset": "adult_idle_11.png",
+      "sha256": "54dc951296f69f5dd434c7b8ce5ad1d21df23620a99a885ae5135705b068071a",
+      "bytes": 1032975,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 24,
+      "asset": "adult_idle_12.png",
+      "sha256": "192f991875f90d76a16d387d0f598d2e47a4f102905d5bf31adb6938cec8d789",
+      "bytes": 1038979,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 25,
+      "asset": "adult_flight_01.png",
+      "sha256": "9022a2d53ac6475fab606b3df1edb31c3d5da5828851e4ea47d0055b71066c07",
+      "bytes": 1031018,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 26,
+      "asset": "adult_flight_02.png",
+      "sha256": "3ea8bbeae8db62e05574441c342754bae2eacbd90e7ea86cda1e613bb337c437",
+      "bytes": 1007467,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 27,
+      "asset": "adult_flight_03.png",
+      "sha256": "ca72fb5622fbef9f6447bd4b28a6be2897d9c697eb9ea0855541b40999ce09ad",
+      "bytes": 1030228,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 28,
+      "asset": "adult_flight_04.png",
+      "sha256": "6868c4f2c6bb492eebb1d30d82bd505a330244d82581ec4c3fb93734b94726a4",
+      "bytes": 1142068,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 29,
+      "asset": "adult_flight_05.png",
+      "sha256": "09046695b81ab6afedc3f33d1cf3851bd9a0320cc133e99f75b35ae5fe153e57",
+      "bytes": 1148115,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 30,
+      "asset": "adult_flight_06.png",
+      "sha256": "6b2653a6228e998b8ae4082dc6b0252373d6624a167f5fe72be02e9ddba16db3",
+      "bytes": 961957,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 31,
+      "asset": "adult_flight_07.png",
+      "sha256": "9a1810ffddee45d3fb3d28b7b3903e022117bebdb3f0c7e2acaf416cc7578d73",
+      "bytes": 1036018,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 32,
+      "asset": "adult_flight_08.png",
+      "sha256": "3161ef84658d5d9503bdebae9ba1a4951fa98105c6336697c6bebb62a291ae6b",
+      "bytes": 1001544,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 33,
+      "asset": "adult_flight_09.png",
+      "sha256": "d22a98699e644060d6c12d24741d33a67ab1be90f4af3766b5131b2d002eb19a",
+      "bytes": 1019746,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 34,
+      "asset": "adult_flight_10.png",
+      "sha256": "343cb2d3a364bf7cd8ec576f3dc051a7eb12bceff7c0a61c713f8553ddc3cef6",
+      "bytes": 1014661,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 35,
+      "asset": "baby_01.png",
+      "sha256": "d340b82ca61807f17c3dfbf780b06eb9e9c8189ff2d00a589c2419ed64398ca6",
+      "bytes": 1627997,
+      "dimensions": [
+        1122,
+        1402
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 36,
+      "asset": "baby_02.png",
+      "sha256": "4c8ce664c6082c079acfa6302c6c17090dcf67bd272dc941800729657fae1a66",
+      "bytes": 1577139,
+      "dimensions": [
+        1122,
+        1402
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 37,
+      "asset": "baby_03.png",
+      "sha256": "183d26caf725faf2252060359384e8a4775e91772ad6424d9d57f3d1d6e54d0f",
+      "bytes": 1684775,
+      "dimensions": [
+        1122,
+        1402
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 38,
+      "asset": "baby_04.png",
+      "sha256": "fa8ae06ab1c96ada988fa1fff5f208e3be3c151c781c4ada10333c8a3d6bbbc1",
+      "bytes": 1634281,
+      "dimensions": [
+        1122,
+        1402
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 39,
+      "asset": "baby_05.png",
+      "sha256": "c62b52370ff572ce8824edf0952c04ead26532effa106e2581a3da2ff96b0d35",
+      "bytes": 1773644,
+      "dimensions": [
+        1122,
+        1402
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 40,
+      "asset": "baby_06.png",
+      "sha256": "e78e408ca1cc67faa1b5786db466cb0acac677121e0a97f02b4a421e59953a01",
+      "bytes": 1583969,
+      "dimensions": [
+        1122,
+        1402
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 41,
+      "asset": "baby_07.png",
+      "sha256": "4a12587c1a9779229554e4bc56cbee0311788c5d16d86350de6ed202d703f873",
+      "bytes": 1565659,
+      "dimensions": [
+        1122,
+        1402
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 42,
+      "asset": "baby_08.png",
+      "sha256": "3ef28340fa1cfe633d743e66549c77baad35fc819bcdd047d4c0adadce122e45",
+      "bytes": 1637726,
+      "dimensions": [
+        1122,
+        1402
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 43,
+      "asset": "baby_09.png",
+      "sha256": "6b048dd6a65eb6033d99055349513c3af58662b38b2ae8b0d44354e682233832",
+      "bytes": 1640439,
+      "dimensions": [
+        1122,
+        1402
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 44,
+      "asset": "baby_10.png",
+      "sha256": "c0df08031c88c355aca861c907c48acbd3137736916d61d6f3d649920db3e79b",
+      "bytes": 1591439,
+      "dimensions": [
+        1122,
+        1402
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    },
+    {
+      "occurrence": 45,
+      "asset": "approved_title.png",
+      "sha256": "b2914a82dc71047a34e29399cfb20ca81fd30c3fcdc2767e730f8999a1838cda",
+      "bytes": 1983795,
+      "dimensions": [
+        2172,
+        724
+      ],
+      "format": "PNG",
+      "deduplicated": false
+    }
+  ]
+}

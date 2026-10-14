@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>הגליל המושלם — embedded playground</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;font-family:Arial,sans-serif}
+body{display:block}
+#stage{position:absolute;inset:0;width:100%;height:100%;user-select:none;touch-action:none;filter:none;overflow:visible}
+.layer{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+#bodyImg{z-index:1}
+
+/* Transparent moving layer only. The original parchment remains completely visible underneath. */
+#textViewport{position:absolute;z-index:2;left:33.20%;top:18.45%;width:33.60%;height:57.40%;overflow:hidden;pointer-events:none;border-radius:2%/5%;clip-path:none}
+#textCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+/* Guaranteed original static handle from the approved pre-split asset */
+#handleRestore{z-index:4}
+
+.hit{display:none!important}
+#hitLeft{left:1.2%;top:15%;width:17%;height:54%}
+#hitRight{right:1.2%;top:15%;width:17%;height:54%}
+#hitHandle{right:0%;top:48%;width:15%;height:48%}
+</style>
+</head>
+<body>
+<div id="stage">
+  <img id="bodyImg" class="layer" src="assets/cylinder_v359_6d1ccd49ca464dbe.png" alt="גליל מקורי">
+  <div id="textViewport"><canvas id="textCanvas"></canvas></div>
+  <img id="handleRestore" class="layer" src="assets/cylinder_v359_a56b26b32ce1e65b.png" alt="ידית מקורית">
+  <button id="hitLeft" class="hit" aria-label="הקודם"></button>
+  <button id="hitRight" class="hit" aria-label="הבא"></button>
+  <button id="hitHandle" class="hit" aria-label="סובב"></button>
+</div>
+
+
+
+
+<script>
+(() => {
+  const SPIN_MS = 2550;
+  const MAX_ANGLE = Math.PI * 0.40;
+  const IN_DELAY = 0.46;
+
+  const model = {
+    activeKey: 'linear',
+    linear: { m: null, b: null },
+    quadratic: { a: null, b: null, c: null },
+    general: { formula: 'f(x) = ' },
+    useValues: false
+  };
+
+  const canvas = document.getElementById('textCanvas');
+  const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
+  const stage = document.getElementById('stage');
+  const hitLeft = document.getElementById('hitLeft');
+  const hitRight = document.getElementById('hitRight');
+  const hitHandle = document.getElementById('hitHandle');
+
+  let currentIndex = 0;
+  let busy = false;
+  let spinDir = 1;
+  let progress = 0;
+  let offscreens = [];
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const mix = (a, b, t) => a + (b - a) * t;
+  const smooth = (a, b, x) => {
+    const t = clamp((x - a) / (b - a), 0, 1);
+    return t * t * (3 - 2 * t);
+  };
+
+  function coerceNumber(value) {
+    if (value === '' || value == null) return null;
+    if (typeof value === 'number') return Number.isFinite(value) ? String(value) : null;
+    return String(value).trim() || null;
+  }
+
+  function isZero(v) { return v != null && /^[-+]?0(?:\.0+)?$/.test(String(v)); }
+  function isOne(v) { return v != null && /^\+?1(?:\.0+)?$/.test(String(v)); }
+  function isMinusOne(v) { return v != null && /^-1(?:\.0+)?$/.test(String(v)); }
+  function isNegative(v) { return v != null && String(v).trim().startsWith('-'); }
+  function absText(v) { const s=String(v).trim(); return s.startsWith('-') ? s.slice(1) : s; }
+
+  function makeCanvas(w, h) {
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(w));
+    c.height = Math.max(1, Math.round(h));
+    return c;
+  }
+
+  function fitFont(g, text, fontFamily, fontStyle, fontWeight, targetPx, maxWidth) {
+    let px = targetPx;
+    while (px > 18) {
+      g.font = `${fontStyle} ${fontWeight} ${Math.round(px)}px ${fontFamily}`;
+      if (g.measureText(text).width <= maxWidth) return px;
+      px -= 2;
+    }
+    return px;
+  }
+
+  function formatLinear() {
+    if (!model.useValues) return 'y = mx + b';
+    const m = model.linear.m;
+    const b = model.linear.b;
+    let expr = m == null ? 'mx' : (isOne(m) ? 'x' : (isMinusOne(m) ? '-x' : `${m}x`));
+    if (b == null) expr += ' + b';
+    else if (!isZero(b)) expr += isNegative(b) ? ` - ${absText(b)}` : ` + ${b}`;
+    return `y = ${expr}`;
+  }
+
+  function formatQuadratic() {
+    if (!model.useValues) return 'f(x) = ax² + bx + c';
+    const { a, b, c } = model.quadratic;
+    let expr = a == null ? 'ax²' : (isOne(a) ? 'x²' : (isMinusOne(a) ? '-x²' : `${a}x²`));
+    if (b == null) expr += ' + bx';
+    else if (!isZero(b)) expr += isNegative(b) ? ` - ${isMinusOne(b) ? '' : absText(b)}x` : ` + ${isOne(b) ? '' : b}x`;
+    if (c == null) expr += ' + c';
+    else if (!isZero(c)) expr += isNegative(c) ? ` - ${absText(c)}` : ` + ${c}`;
+    return `f(x) = ${expr}`;
+  }
+
+  function prettyCanvasMath(raw){
+    return String(raw||'').replace(/\bpi\b/gi,'π').replace(/\bsqrt\s*\(/gi,'√(')
+      .replace(/\+\s*-/g,'−').replace(/\*/g,'·')
+      .replace(/(^|[+=-])1·x\b/g,'$1x').replace(/(^|[+=-])1x\b/g,'$1x')
+      .replace(/\^\s*([+\-]?\d+)/g,(_,s)=>Array.from(s).map(c=>({'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻','+':'⁺'}[c]||c)).join(''));
+  }
+
+  function getStates() {
+    return [
+      { key: 'linear', title: 'ישר', formula: formatLinear(), color: '#244c8d' },
+      { key: 'quadratic', title: 'פרבולה', formula: formatQuadratic(), color: '#523494' },
+      { key: 'general', title: 'פונקציה', formula: model.general.formula, color: '#523494' }
+    ];
+  }
+
+  function buildStateImage(state) {
+    const W = canvas.width;
+    const fullH = canvas.height;
+
+    // Final approved proportions: larger, clearer title and equation while staying inside the parchment.
+    const titleH = Math.round(fullH * 0.20);
+    const formulaH = Math.round(fullH * 0.34);
+    const titleCanvas = makeCanvas(W, titleH);
+    const formulaCanvas = makeCanvas(W, formulaH);
+    const tg = titleCanvas.getContext('2d');
+    const fg = formulaCanvas.getContext('2d');
+    const isQuadratic = state.key === 'quadratic';
+
+    tg.imageSmoothingEnabled = true;
+    tg.imageSmoothingQuality = 'high';
+    fg.imageSmoothingEnabled = true;
+    fg.imageSmoothingQuality = 'high';
+
+    tg.clearRect(0, 0, W, titleH);
+    tg.textAlign = 'center';
+    tg.textBaseline = 'middle';
+    tg.direction = 'rtl';
+    tg.fillStyle = '#6a3620';
+    const titleTarget = isQuadratic ? titleH * 0.78 : titleH * 0.82;
+    const titleMaxWidth = isQuadratic ? W * 0.38 : W * 0.24;
+    const titleFont = "'Arial Hebrew','Noto Sans Hebrew','Arial',sans-serif";
+    const titlePx = fitFont(tg, state.title, titleFont, 'normal', 900, titleTarget, titleMaxWidth);
+    tg.font = `normal 900 ${Math.round(titlePx)}px ${titleFont}`;
+    tg.strokeStyle = 'rgba(255,245,222,.94)';
+    tg.lineWidth = Math.max(1.8, titlePx * 0.055);
+    tg.lineJoin = 'round';
+    const titleY = titleH * 0.62;
+    tg.strokeText(state.title, W * 0.5, titleY);
+    tg.fillText(state.title, W * 0.5, titleY);
+
+    fg.clearRect(0, 0, W, formulaH);
+    fg.textAlign = 'center';
+    fg.textBaseline = 'middle';
+    fg.direction = 'ltr';
+    fg.fillStyle = state.color;
+    fg.shadowColor = 'rgba(255,255,255,.14)';
+    fg.shadowBlur = Math.max(1, formulaH * 0.009);
+    fg.shadowOffsetY = Math.max(1, formulaH * 0.005);
+    const formulaTarget = isQuadratic ? formulaH * 0.92 : formulaH * 1.05;
+    const formulaMaxWidth = isQuadratic ? W * 0.92 : W * 0.94;
+    const formulaPx = fitFont(fg, state.formula, 'Georgia', 'italic', 700, formulaTarget, formulaMaxWidth);
+    fg.font = `italic 700 ${Math.round(formulaPx)}px Georgia`;
+    if(state.key==='general' && !state.formula.trim().replace(/^f\(x\)\s*=\s*/,'')){
+      const fs=Math.min(formulaH*.55,W*.10);
+      fg.shadowBlur=0;fg.textAlign='right';fg.direction='ltr';
+      fg.font=`italic 700 ${Math.round(fs)}px Georgia`;
+      fg.fillText('f(x) =',W*.51,formulaH*.53);
+      // Gold/violet miniature calculator, not a generic character or label.
+      const iconX=W*.55,iconY=formulaH*.245,iconW=formulaH*.45,iconH=formulaH*.55;
+      const corner=Math.max(2,iconW*.12);
+      fg.fillStyle='#4a328c';fg.strokeStyle='#d7ad60';fg.lineWidth=Math.max(2,iconW*.045);
+      fg.beginPath();fg.roundRect(iconX,iconY,iconW,iconH,corner);fg.fill();fg.stroke();
+      fg.fillStyle='#f3dfad';fg.beginPath();fg.roundRect(iconX+iconW*.12,iconY+iconH*.11,iconW*.76,iconH*.23,iconW*.035);fg.fill();
+      fg.fillStyle='#e8d4fa';
+      for(let r=0;r<2;r++)for(let c=0;c<3;c++){
+        fg.beginPath();fg.roundRect(iconX+iconW*(.13+.26*c),iconY+iconH*(.44+.24*r),iconW*.18,iconH*.14,iconW*.025);fg.fill();
+      }
+    }else fg.fillText(prettyCanvasMath(state.formula), W * 0.5, formulaH * 0.48);
+
+    return { title: titleCanvas, formula: formulaCanvas };
+  }
+
+  function rebuildOffscreens() {
+    offscreens = getStates().map(buildStateImage);
+    currentIndex = model.activeKey === 'general' ? 2 : model.activeKey === 'quadratic' ? 1 : 0;
+  }
+
+  function resizeCanvas() {
+    const r = canvas.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.round(r.width * dpr);
+    canvas.height = Math.round(r.height * dpr);
+    rebuildOffscreens();
+    render();
+  }
+
+  function drawSurfaceMorph(sourceCanvas, centerAngle, baseAlpha, localSpan, flatTop, flatHeight, curveAmount) {
+    if (baseAlpha <= 0.001) return;
+
+    const W = canvas.width;
+    const H = canvas.height;
+    const SW = sourceCanvas.width;
+    const SH = sourceCanvas.height;
+    const CY = H * 0.50;
+    const R = H * 0.43;
+    // Reduce per-frame work only while the text is actually curved/moving.
+    // The static front face stays at full quality.
+    const moving = curveAmount > 0.001;
+    const stripe = Math.max(3, Math.round(SH / (moving ? 26 : 42)));
+    const clipTop = H * 0.055;
+    const clipBottom = H * 0.755;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, clipTop, W, clipBottom - clipTop);
+    ctx.clip();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = moving ? 'medium' : 'high';
+
+    for (let sy = 0; sy < SH; sy += stripe) {
+      const srcH = Math.min(stripe, SH - sy);
+      const v = (sy + srcH * 0.5) / SH - 0.5;
+
+      // Exact flat row position used at rest.
+      const flatY = flatTop + ((sy + srcH * 0.5) / SH) * flatHeight;
+      const flatDestH = flatHeight * (srcH / SH);
+
+      // Cylindrical row position used during the turn.
+      const ang = centerAngle + v * localSpan;
+      const c = Math.cos(ang);
+      if (curveAmount > 0.001 && c <= 0) continue;
+      const cylY = CY + R * Math.sin(ang);
+      const cylDestH = Math.max(0.55, R * localSpan * Math.max(0, c) * (srcH / SH));
+
+      // Morph continuously from the exact static pixels into the curved surface.
+      const y = mix(flatY, cylY, curveAmount);
+      const destH = mix(flatDestH, cylDestH, curveAmount);
+      const top = y - destH * 0.5;
+      const bottom = y + destH * 0.5;
+      if (bottom <= clipTop || top >= clipBottom) continue;
+
+      const shade = curveAmount <= 0.001 ? 1 : Math.pow(Math.max(0, c), 0.46);
+      const alpha = baseAlpha * shade;
+      if (alpha <= 0.003) continue;
+
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(sourceCanvas, 0, sy, SW, srcH, 0, top, W, destH + 0.45);
+    }
+
+    ctx.restore();
+  }
+
+  function drawStateMorph(stateCanvas, centerAngle, baseAlpha, curveAmount) {
+    const H = canvas.height;
+    const TITLE_OFFSET = -0.46;
+    const titleTop = H * 0.115;
+    const formulaTop = H * 0.344;
+    const titleHeight = stateCanvas.title.height;
+    const formulaHeight = stateCanvas.formula.height;
+
+    drawSurfaceMorph(stateCanvas.formula, centerAngle, baseAlpha, 0.44, formulaTop, formulaHeight, curveAmount);
+    drawSurfaceMorph(stateCanvas.title, centerAngle + TITLE_OFFSET, baseAlpha, 0.12, titleTop, titleHeight, curveAmount);
+  }
+
+  function drawFlatState(stateCanvas, alpha = 1) {
+    // Same source pixels and same exact placement used at the start/end of drawStateMorph.
+    drawStateMorph(stateCanvas, 0, alpha, 0);
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const current = offscreens[currentIndex];
+    if (!current) return;
+
+    if (!busy) {
+      drawFlatState(current, 1);
+      return;
+    }
+
+    const nextIndex = (currentIndex + spinDir + offscreens.length) % offscreens.length;
+    const next = offscreens[nextIndex];
+
+    // Keep the VISIBLE travel speed constant on the projected cylinder.
+    // Since screen position follows sin(angle), derive angle from a linear Y path.
+    // This removes the subtle perceived mid-transition hitch/slowdown.
+    const spinP = progress;
+    const sinMax = Math.sin(MAX_ANGLE);
+    const outAngle = -spinDir * Math.asin(sinMax * spinP);
+    const inAngle = spinDir * Math.asin(sinMax * (1 - spinP));
+
+    // Curvature depends only on physical angular distance from the front face.
+    // That keeps the exact resting pixels at angle 0 and removes visual jumps,
+    // while the actual rotational speed remains perfectly constant.
+    const CURVE_ZONE = MAX_ANGLE * 0.24;
+    const curveFromAngle = angle => {
+      const t = clamp(Math.abs(angle) / CURVE_ZONE, 0, 1);
+      return smooth(0, 1, t);
+    };
+    const outCurve = curveFromAngle(outAngle);
+    const inCurve = curveFromAngle(inAngle);
+
+    // Preserve the approved typography exactly, but add a short empty parchment interval
+    // in the middle so the two functions feel like opposite faces of the same cylinder.
+    // The geometry and speed stay exactly as in v4; only visibility is separated.
+    const outVis = 1 - smooth(0.56, 0.62, spinP);
+    const inVis = smooth(0.68, 0.74, spinP);
+
+    if (outVis > 0.001) drawStateMorph(current, outAngle, outVis, outCurve);
+    if (inVis > 0.001) drawStateMorph(next, inAngle, inVis, inCurve);
+  }
+
+  function spin(dir = 1) {
+    if (busy) return;
+    busy = true;
+    spinDir = dir;
+    progress = 0;
+    const start = performance.now();
+
+    function tick(now) {
+      progress = Math.min(1, (now - start) / SPIN_MS);
+      render();
+      if (progress < 1) {
+        requestAnimationFrame(tick);
+        return;
+      }
+      currentIndex = (currentIndex + spinDir + offscreens.length) % offscreens.length;
+      model.activeKey = currentIndex === 2 ? 'general' : currentIndex === 1 ? 'quadratic' : 'linear';
+      window.parent?.postMessage?.({type:'cylinder:page-changed',key:model.activeKey},'*');
+      busy = false;
+      progress = 0;
+      render();
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  function refresh() {
+    rebuildOffscreens();
+    render();
+  }
+
+  function setLinear(m, b) {
+    model.linear = { m: coerceNumber(m), b: coerceNumber(b) };
+    model.useValues = true;
+    refresh();
+  }
+
+  function setQuadratic(a, b, c) {
+    model.quadratic = { a: coerceNumber(a), b: coerceNumber(b), c: coerceNumber(c) };
+    model.useValues = true;
+    refresh();
+  }
+
+  function useSymbols() {
+    model.useValues = false;
+    refresh();
+  }
+
+  function useValues() {
+    model.useValues = true;
+    refresh();
+  }
+
+  function spinTo(key) {
+    const targetIndex = key === 'general' ? 2 : key === 'quadratic' ? 1 : 0;
+    if (busy || currentIndex === targetIndex) {
+      model.activeKey = targetIndex === 2 ? 'general' : targetIndex === 1 ? 'quadratic' : 'linear';
+      refresh();
+      return;
+    }
+    spin(targetIndex > currentIndex ? 1 : -1);
+  }
+
+  function showLinear(values = {}) {
+    if ('m' in values || 'b' in values) {
+      setLinear(values.m, values.b);
+    } else {
+      model.activeKey = 'linear';
+      refresh();
+    }
+    if (values.spin) spinTo('linear');
+    else {
+      currentIndex = 0;
+      model.activeKey = 'linear';
+      render();
+    }
+  }
+
+  function showQuadratic(values = {}) {
+    if ('a' in values || 'b' in values || 'c' in values) {
+      setQuadratic(values.a, values.b, values.c);
+    } else {
+      model.activeKey = 'quadratic';
+      refresh();
+    }
+    if (values.spin) spinTo('quadratic');
+    else {
+      currentIndex = 1;
+      model.activeKey = 'quadratic';
+      render();
+    }
+  }
+
+  function showGeneral(values={}){
+    let raw=String(values.formula||values.expression||'').trim();
+    if(raw){
+      raw=raw.replace(/^\s*(?:y|f\s*\(\s*x\s*\))\s*=\s*/i,'');
+      model.general.formula='f(x) = '+raw;
+    }else model.general.formula='f(x) = ';
+    model.activeKey='general';currentIndex=2;refresh();
+  }
+
+  function updateFromDials(payload = {}) {
+    const linear = payload.linear || {};
+    const quadratic = payload.quadratic || {};
+
+    const linearM = 'm' in linear ? linear.m : ('m' in payload ? payload.m : payload.linearM);
+    const linearB = 'b' in linear ? linear.b : ('linearB' in payload ? payload.linearB : ('b' in payload && !('quadratic' in payload) && !('quadraticB' in payload) ? payload.b : payload.bLinear));
+    const quadA = 'a' in quadratic ? quadratic.a : ('a' in payload ? payload.a : payload.quadraticA);
+    const quadB = 'b' in quadratic ? quadratic.b : ('quadraticB' in payload ? payload.quadraticB : ('b2' in payload ? payload.b2 : payload.quadB));
+    const quadC = 'c' in quadratic ? quadratic.c : ('c' in payload ? payload.c : payload.quadraticC);
+
+    if (linearM !== undefined || linearB !== undefined) {
+      model.linear = {
+        m: linearM !== undefined ? coerceNumber(linearM) : model.linear.m,
+        b: linearB !== undefined ? coerceNumber(linearB) : model.linear.b
+      };
+    }
+
+    if (quadA !== undefined || quadB !== undefined || quadC !== undefined) {
+      model.quadratic = {
+        a: quadA !== undefined ? coerceNumber(quadA) : model.quadratic.a,
+        b: quadB !== undefined ? coerceNumber(quadB) : model.quadratic.b,
+        c: quadC !== undefined ? coerceNumber(quadC) : model.quadratic.c
+      };
+    }
+
+    if ('useValues' in payload) model.useValues = !!payload.useValues;
+    if ('useSymbols' in payload) model.useValues = !payload.useSymbols;
+    if ('mode' in payload) model.activeKey = payload.mode === 'general' ? 'general' : payload.mode === 'quadratic' ? 'quadratic' : 'linear';
+    if ('active' in payload) model.activeKey = payload.active === 'general' ? 'general' : payload.active === 'quadratic' ? 'quadratic' : 'linear';
+
+    refresh();
+
+    if (payload.spinTo === 'linear' || payload.spinTo === 'quadratic' || payload.spinTo === 'general') {
+      spinTo(payload.spinTo);
+      return getState();
+    }
+
+    if (payload.mode === 'quadratic' || payload.active === 'quadratic') {
+      currentIndex = 1;
+      render();
+    }
+    if (payload.mode === 'linear' || payload.active === 'linear') {
+      currentIndex = 0;
+      render();
+    }
+
+    return getState();
+  }
+
+  function getState() {
+    return {
+      active: currentIndex === 2 ? 'general' : currentIndex === 1 ? 'quadratic' : 'linear',
+      general: {...model.general},
+      useValues: model.useValues,
+      linear: { ...model.linear },
+      quadratic: { ...model.quadratic },
+      busy
+    };
+  }
+
+  function handleMessage(data) {
+    if (!data || typeof data !== 'object') return;
+    if (data.type === 'cylinder:update') updateFromDials(data.payload || data.values || {});
+    if (data.type === 'cylinder:showLinear') showLinear(data.payload || data.values || {});
+    if (data.type === 'cylinder:showQuadratic') showQuadratic(data.payload || data.values || {});
+    if (data.type === 'cylinder:showGeneral') showGeneral(data.payload || data.values || {});
+    if (data.type === 'cylinder:useSymbols') useSymbols();
+    if (data.type === 'cylinder:useValues') useValues();
+    if (data.type === 'cylinder:spinNext') spin(1);
+    if (data.type === 'cylinder:spinPrev') spin(-1);
+    if (data.type === 'cylinder:spinTo' && data.key) spinTo(data.key);
+  }
+
+  function applyQueryParams() {
+    const q = new URLSearchParams(window.location.search);
+    if (!q.toString()) return;
+    updateFromDials({
+      m: q.get('m'),
+      linearB: q.get('linearB') ?? q.get('b'),
+      a: q.get('a'),
+      quadraticB: q.get('quadraticB') ?? q.get('b2'),
+      c: q.get('c'),
+      useValues: q.get('useValues') === '1' || q.get('useValues') === 'true',
+      active: q.get('active') || q.get('mode') || undefined
+    });
+  }
+
+  window.cylinderModel = {
+    setLinear,
+    setQuadratic,
+    useSymbols,
+    useValues,
+    showLinear,
+    showQuadratic,
+    showGeneral,
+    updateFromDials,
+    setFromMainDials: updateFromDials,
+    spinNext() { spin(1); },
+    spinPrev() { spin(-1); },
+    spinTo,
+    refresh,
+    getState,
+    getConfig() {
+      return {
+        spinMs: SPIN_MS,
+        maxAngle: MAX_ANGLE,
+        inDelay: IN_DELAY,
+        viewport: { left: '33.20%', top: '18.45%', width: '33.60%', height: '57.40%' }
+      };
+    }
+  };
+
+  resizeCanvas();
+  applyQueryParams();
+
+  window.addEventListener('resize', resizeCanvas);
+  hitLeft.addEventListener('click', () => spin(-1));
+  hitRight.addEventListener('click', () => spin(1));
+  hitHandle.addEventListener('click', () => spin(1));
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') spin(-1);
+    if (e.key === 'ArrowRight' || e.key === ' ') spin(1);
+  });
+
+  window.addEventListener('message', event => handleMessage(event.data));
+  window.addEventListener('cylinder:update', event => updateFromDials(event.detail || {}));
+
+  stage.dispatchEvent(new CustomEvent('cylinder:ready', { bubbles: true, detail: { api: window.cylinderModel } }));
+  window.dispatchEvent(new CustomEvent('cylinder:ready', { detail: { api: window.cylinderModel } }));
+})();
+</script>
+
+</body>
+</html>
