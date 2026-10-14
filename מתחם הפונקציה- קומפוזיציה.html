@@ -5441,8 +5441,9 @@ html body #ride #outputChargeDock > strong#outputChargeValue{color:#fff4fa!impor
     extraColumnPct:4.9,maxWidthPct:64,scale:.82,minSlots:5,zIndex:34,
     xColor:'#70efff',yColor:'#ffabd8',expandDirection:'left'
   });
+  // Stable master scene: previous per-browser positioning is intentionally not restored.
+  // The value-table data and mathematical functionality remain unchanged.
   let layout={...DEFAULT_LAYOUT};
-  try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(saved&&typeof saved==='object')layout={...layout,...saved};}catch(_e){}
 
   const panel=document.createElement('section');
   panel.id='valueTablePanel';
@@ -6383,73 +6384,7 @@ html body #ride #outputChargeDock > strong#outputChargeValue{color:#fff4fa!impor
 #valueTablePanel,#approvedMagicAxes{transition:none!important;}
 </style>
 <script id="combined-objects-inside-slider-script">
-(function(){
-  'use strict';
-  let lastAppliedShift=0;
-  function balance(){
-    const ride=document.getElementById('ride');
-    const deck=document.querySelector('.control-deck');
-    const table=document.getElementById('valueTablePanel');
-    const axes=document.getElementById('approvedMagicAxes');
-    if(!ride||!deck||!table||!axes)return false;
-    if(table.classList.contains('vt-minimized')||axes.classList.contains('ma-minimized'))return false;
-
-    /* Undo only our previous responsive correction before measuring again. */
-    const undo=(el,varName)=>{
-      if(!lastAppliedShift)return;
-      const raw=getComputedStyle(el).getPropertyValue(varName).trim();
-      const n=parseFloat(raw);
-      if(Number.isFinite(n))el.style.setProperty(varName,(n-lastAppliedShift).toFixed(4)+'%');
-    };
-    undo(table,'--vt-right');
-    undo(axes,'--ma-right');
-    lastAppliedShift=0;
-
-    const rr=ride.getBoundingClientRect(),dr=deck.getBoundingClientRect();
-    const tr=table.getBoundingClientRect(),ar=axes.getBoundingClientRect();
-    if(!rr.width||!dr.width||!tr.width||!ar.width)return false;
-    const groupLeft=Math.min(tr.left,ar.left);
-    const groupRight=Math.max(tr.right,ar.right);
-    const deckCenter=(dr.left+dr.right)/2;
-    const groupCenter=(groupLeft+groupRight)/2;
-    let dx=deckCenter-groupCenter;
-    const shiftedLeft=groupLeft+dx, shiftedRight=groupRight+dx;
-    if(shiftedLeft<dr.left)dx+=dr.left-shiftedLeft;
-    if(shiftedRight>dr.right)dx-=shiftedRight-dr.right;
-    const deltaPct=dx/rr.width*100;
-    const readRight=(el,varName)=>{
-      const raw=getComputedStyle(el).getPropertyValue(varName).trim();
-      const n=parseFloat(raw);
-      return Number.isFinite(n)?n:null;
-    };
-    const vt=readRight(table,'--vt-right');
-    const ma=readRight(axes,'--ma-right');
-    /* right decreases when moving right, so subtract the measured horizontal delta. */
-    if(vt!==null)table.style.setProperty('--vt-right',(vt-deltaPct).toFixed(4)+'%');
-    if(ma!==null)axes.style.setProperty('--ma-right',(ma-deltaPct).toFixed(4)+'%');
-    lastAppliedShift=-deltaPct;
-    table.dataset.balancedShiftPct=deltaPct.toFixed(4);
-    axes.dataset.balancedShiftPct=deltaPct.toFixed(4);
-    return true;
-  }
-
-  /* This script is at the end of <body>, after both objects were created.
-     Force layout and place them synchronously, before the browser paints the page. */
-  const revealWhenBalanced=()=>{
-    if(balance()){
-      document.documentElement.classList.add('combined-balanced-ready');
-      return true;
-    }
-    return false;
-  };
-  if(!revealWhenBalanced()){
-    /* Fallback only if layout dimensions were not ready yet; objects remain hidden, so no jump is visible. */
-    requestAnimationFrame(()=>{if(!revealWhenBalanced())window.addEventListener('load',revealWhenBalanced,{once:true});});
-  }
-
-  /* Responsive correction is instantaneous, with no animation. */
-  window.addEventListener('resize',()=>{balance();},{passive:true});
-})();
+/* The approved scene-geometry layout below replaces the old viewport-dependent centering. */
 </script>
 
 
@@ -7737,7 +7672,7 @@ html[data-lesson-mode="axes"] #approvedMagicAxes {display:block!important;visibi
   nav.addEventListener('click',e=>{
     const btn=e.target.closest('button[data-to]');if(!btn)return;
     const key=btn.dataset.to,cfg=window.FunctionRide?.getFunction?.();publish(cfg);
-    const target=key==='axes'?'ממלכת הצירים מושלם מסך מלא.html':'PLAY.html';
+    const target=key==='axes'?'ממלכת הצירים מושלם מסך מלא.html':'index.html';
     const url=new URL(target,location.href),expression=configExpression(cfg);
     if(expression){url.searchParams.set('f',expression);url.searchParams.set('display','f(x)='+expression);}
     if(cfg?.angleUnit)url.searchParams.set('angleUnit',cfg.angleUnit);
@@ -7912,6 +7847,136 @@ html:fullscreen #ride > .ride-art{
     }));
   }
   document.addEventListener('fullscreenchange',align);
+})();
+</script>
+
+<style id="composition-stable-geometry-v15">
+/* Positioning only. Preserve existing artwork, table/grid, axes and animation. */
+/* V14 added independent fullscreen offsets that broke their common baseline. */
+html:fullscreen #valueTablePanel:not(.vt-minimized){top:var(--vt-top)!important;}
+html:fullscreen #approvedMagicAxes:not(.ma-minimized){top:var(--ma-top)!important;}
+</style>
+
+<script id="composition-stable-geometry-v15-script">
+(()=>{
+ 'use strict';
+ /* Measured geometry of the APPROVED source screenshot (2048 x 915).
+    These are the actual painted asset bounds, not navigator DOM margins:
+    table (320,601)-(962,815); axes (962,466)-(1441,825).
+    The quick navigator has transparent image margins; its DOM bounding box
+    is NOT a suitable edge for the graph and must remain independently locked. */
+ const ART=Object.freeze({
+   refW:2048,refH:915,
+   axesLeft:962,axesRight:1441,axesBottom:825,
+   tableRight:962,tableBottom:815,
+   tableBasePct:34.5,tableScale:0.9086,
+   axesAspect:1086/1448,
+   tableShellAspect:2172/724
+ });
+ const stage=document.getElementById('ride');
+ const axes=document.getElementById('approvedMagicAxes');
+ const table=document.getElementById('valueTablePanel');
+ if(!stage||!axes||!table||document.documentElement.hasAttribute('data-lesson-mode'))return;
+ const root=document.documentElement;
+ const number=(value,fallback)=>{const n=parseFloat(value);return Number.isFinite(n)?n:fallback;};
+ let raf=0;
+ let previous='';
+ const set=(el,name,value)=>{
+    if(el.style.getPropertyValue(name)!==value)el.style.setProperty(name,value);
+ };
+ function align(){
+   const rect=stage.getBoundingClientRect();
+   if(rect.width<=0||rect.height<=0)return;
+   // Stage CSS coordinates stay correct even if the page is embedded with a
+   // CSS transform or in a high-DPI browser. Use a single coordinate space.
+   const unitX=rect.width/Math.max(1,stage.offsetWidth);
+   const unitY=rect.height/Math.max(1,stage.offsetHeight);
+   const sx=rect.width/ART.refW;
+   const sy=rect.height/ART.refH;
+   const tablePct=number(getComputedStyle(table).getPropertyValue('--vt-width'),ART.tableBasePct);
+   // The default shell was .82 on a fresh browser. The reference screenshot
+   // used the approved enlarged scale .9086. Do not read browser-specific
+   // localStorage as a geometry source. Columns still extend left normally.
+   const baseScale=ART.tableScale;
+   const axisW=rect.width*(ART.axesRight-ART.axesLeft)/ART.refW;
+   const axisH=axisW*ART.axesAspect;
+   const tableUnscaledW=rect.width*tablePct/100;
+   const tableBaseUnscaledW=rect.width*ART.tableBasePct/100;
+   const tableW=tableUnscaledW*baseScale;
+   const tableH=(tableBaseUnscaledW/ART.tableShellAspect)*baseScale;
+   // Preserve the exact approved horizontal coordinates. The navigation's
+   // transparent PNG padding MUST NOT drive this calculation.
+   const axisRight=rect.left+ART.axesRight*sx;
+   const axisLeft=axisRight-axisW;
+   const tableRight=axisLeft; // Painted gold tips touch at the reference.
+   // Vertical geometry: bottom-pinned to the screenshot scene ratio, with the
+   // reference 10px art-tip offset retained between these two natural assets.
+   let axesBottom=rect.top+ART.axesBottom*sy;
+   let tableBottom=axesBottom-(ART.axesBottom-ART.tableBottom)*sx;
+   // On unusually short/wide embeds, fit the *entire pair* within the scene;
+   // never independently scale one object or let a bottom crop occur.
+   const maxHeight=Math.max(axisH,tableH);
+   let fit=Math.min(1,Math.max(.40,(rect.height-12)/Math.max(1,maxHeight)));
+   // Dynamic columns can extend left; avoid clipping the value table on small
+   // viewports while retaining the approved full-size dimensions on desktop.
+   const leftLimit=rect.left+Math.min(6,rect.width*.008);
+   const available=tableRight-leftLimit;
+   if(tableW*fit>available)fit=Math.max(.35,Math.min(fit,available/Math.max(1,tableW)));
+   const finalAxisW=axisW*fit;
+   const finalAxisH=finalAxisW*ART.axesAspect;
+   const finalTableW=tableW*fit;
+   const finalTableH=tableH*fit;
+   const actualAxisLeft=axisRight-finalAxisW;
+   const actualTableRight=actualAxisLeft;
+   const actualTableLeft=actualTableRight-finalTableW;
+   // If fitting was necessary, recompute the baseline against the bottom edge.
+   axesBottom=Math.min(axesBottom,rect.bottom-4);
+   tableBottom=Math.min(axesBottom-(ART.axesBottom-ART.tableBottom)*sx,rect.bottom-4);
+   const tableTop=tableBottom-finalTableH;
+   const axesTop=axesBottom-finalAxisH;
+   // The table aspect ratio is obtained from its actual external asset.
+   // Five-column appearance is preserved; when more columns are added the
+   // existing value-table engine remains in control of horizontal expansion.
+   const variables=[
+     [axes,'--ma-width',((ART.axesRight-ART.axesLeft)/ART.refW*100*fit).toFixed(5)+'%'],
+     [axes,'--ma-right',((rect.right-axisRight)/unitX).toFixed(3)+'px'],
+     [axes,'--ma-top',((axesTop-rect.top)/unitY).toFixed(3)+'px'],
+     [table,'--vt-right',((rect.right-actualTableRight)/unitX).toFixed(3)+'px'],
+     [table,'--vt-top',((tableTop-rect.top)/unitY).toFixed(3)+'px'],
+     [table,'--vt-scale',(baseScale*fit).toFixed(5)],
+     [table,'--vt-height',((tableBaseUnscaledW/ART.tableShellAspect)/unitY).toFixed(3)+'px']
+   ];
+   // Preserve relative original centers for the pre-existing minimize action.
+   const miniWidth=172*.82;
+   variables.push([axes,'--ma-mini-right',((rect.right-(actualAxisLeft+finalAxisW*.5+miniWidth*.5))/unitX).toFixed(3)+'px']);
+   variables.push([table,'--vt-mini-right',((rect.right-(actualTableLeft+finalTableW*.5+miniWidth*.5))/unitX).toFixed(3)+'px']);
+   // Avoid redundant layout writes on every ResizeObserver callback.
+   const state=variables.map(x=>x[1]+':'+x[2]).join(';');
+   if(state!==previous){variables.forEach(args=>set(...args));previous=state;}
+   root.classList.add('combined-balanced-ready');
+ }
+ function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;align()});}
+ // Position before first paint, then after external fonts/assets/layout settle.
+ align();
+ addEventListener('resize',schedule,{passive:true});
+ addEventListener('orientationchange',schedule,{passive:true});
+ addEventListener('load',schedule,{once:true});
+ document.addEventListener('fullscreenchange',()=>requestAnimationFrame(()=>requestAnimationFrame(schedule)));
+ if('ResizeObserver' in window)new ResizeObserver(schedule).observe(stage);
+ if('MutationObserver' in window){
+   const mo=new MutationObserver(schedule);
+   // The own table engine grows the frame when mathematical values are added.
+   const grid=document.getElementById('valueTableGrid');
+   if(grid)mo.observe(grid,{childList:true,subtree:false});
+   mo.observe(table,{attributes:true,attributeFilter:['class']});
+   mo.observe(axes,{attributes:true,attributeFilter:['class']});
+ }
+ window.CompositionStableGeometry=Object.freeze({refresh:schedule,read:()=>({
+   table:table.getBoundingClientRect().toJSON(),
+   axes:axes.getBoundingClientRect().toJSON(),
+   navigation:document.getElementById('advancedPairedQuickNav')?.getBoundingClientRect().toJSON()||null,
+   reference:'2026-10-14 approved screenshot 2048x915'
+ })});
 })();
 </script>
 </body></html>

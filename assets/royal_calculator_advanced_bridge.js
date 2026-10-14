@@ -165,7 +165,7 @@
   nav.addEventListener('click',e=>{
     const btn=e.target.closest('button[data-to]');if(!btn)return;
     const key=btn.dataset.to,cfg=window.FunctionRide?.getFunction?.();publish(cfg);
-    const target=key==='axes'?'ממלכת הצירים מושלם מסך מלא.html':'PLAY.html';
+    const target=key==='axes'?'ממלכת הצירים מושלם מסך מלא.html':'index.html';
     const url=new URL(target,location.href),expression=configExpression(cfg);
     if(expression){url.searchParams.set('f',expression);url.searchParams.set('display','f(x)='+expression);}
     if(cfg?.angleUnit)url.searchParams.set('angleUnit',cfg.angleUnit);
