@@ -5441,9 +5441,8 @@ html body #ride #outputChargeDock > strong#outputChargeValue{color:#fff4fa!impor
     extraColumnPct:4.9,maxWidthPct:64,scale:.82,minSlots:5,zIndex:34,
     xColor:'#70efff',yColor:'#ffabd8',expandDirection:'left'
   });
-  // Stable master scene: previous per-browser positioning is intentionally not restored.
-  // The value-table data and mathematical functionality remain unchanged.
   let layout={...DEFAULT_LAYOUT};
+  // Geometry comes from the approved master screenshot; old per-browser positions are not imported.
 
   const panel=document.createElement('section');
   panel.id='valueTablePanel';
@@ -6383,9 +6382,8 @@ html body #ride #outputChargeDock > strong#outputChargeValue{color:#fff4fa!impor
 /* No visible settling animation: the approved balanced geometry is applied before first paint. */
 #valueTablePanel,#approvedMagicAxes{transition:none!important;}
 </style>
-<script id="combined-objects-inside-slider-script">
-/* The approved scene-geometry layout below replaces the old viewport-dependent centering. */
-</script>
+<!-- Approved scene coordinates are supplied by composition-stable-geometry-v21.
+     Do not automatically re-center the table and axes inside the control deck. -->
 
 
 <script id="final-continuous-motion-performance-lock">
@@ -7827,13 +7825,7 @@ html:fullscreen #ride > .ride-art{
     /* Art bases were slightly below the bridge / car after V13 expansion. */
     bottom:calc(38% + min(1vw,22px))!important;
   }
-  html:fullscreen #valueTablePanel:not(.vt-minimized){
-    /* Its height is stage-height-based, unlike the width-based axes art. */
-    top:calc(var(--vt-top) - min(2vw,48px))!important;
-  }
-  html:fullscreen #approvedMagicAxes:not(.ma-minimized){
-    top:calc(var(--ma-top) + min(.50vw,12px))!important;
-  }
+  /* The approved common baseline is handled by the stage geometry lock (v16). */
 }
 </style>
 <script id="composition-fullscreen-alignment-v14-sync">
@@ -7849,15 +7841,14 @@ html:fullscreen #ride > .ride-art{
   document.addEventListener('fullscreenchange',align);
 })();
 </script>
-
-<style id="composition-stable-geometry-v15">
+<style id="composition-stable-geometry-v19">
 /* Positioning only. Preserve existing artwork, table/grid, axes and animation. */
 /* V14 added independent fullscreen offsets that broke their common baseline. */
 html:fullscreen #valueTablePanel:not(.vt-minimized){top:var(--vt-top)!important;}
 html:fullscreen #approvedMagicAxes:not(.ma-minimized){top:var(--ma-top)!important;}
 </style>
 
-<script id="composition-stable-geometry-v15-script">
+<script id="composition-stable-geometry-v19-script">
 (()=>{
  'use strict';
  /* Measured geometry of the APPROVED source screenshot (2048 x 915).
@@ -7876,7 +7867,7 @@ html:fullscreen #approvedMagicAxes:not(.ma-minimized){top:var(--ma-top)!importan
  const stage=document.getElementById('ride');
  const axes=document.getElementById('approvedMagicAxes');
  const table=document.getElementById('valueTablePanel');
- if(!stage||!axes||!table||document.documentElement.hasAttribute('data-lesson-mode'))return;
+ if(!stage||!axes||!table||document.documentElement.getAttribute('data-lesson-mode')==='basic')return;
  const root=document.documentElement;
  const number=(value,fallback)=>{const n=parseFloat(value);return Number.isFinite(n)?n:fallback;};
  let raf=0;
@@ -7904,42 +7895,51 @@ html:fullscreen #approvedMagicAxes:not(.ma-minimized){top:var(--ma-top)!importan
    const tableBaseUnscaledW=rect.width*ART.tableBasePct/100;
    const tableW=tableUnscaledW*baseScale;
    const tableH=(tableBaseUnscaledW/ART.tableShellAspect)*baseScale;
-   // Preserve the exact approved horizontal coordinates. The navigation's
-   // transparent PNG padding MUST NOT drive this calculation.
-   const axisRight=rect.left+ART.axesRight*sx;
-   const axisLeft=axisRight-axisW;
-   const tableRight=axisLeft; // Painted gold tips touch at the reference.
-   // Vertical geometry: bottom-pinned to the screenshot scene ratio, with the
-   // reference 10px art-tip offset retained between these two natural assets.
-   let axesBottom=rect.top+ART.axesBottom*sy;
-   let tableBottom=axesBottom-(ART.axesBottom-ART.tableBottom)*sx;
-   // On unusually short/wide embeds, fit the *entire pair* within the scene;
-   // never independently scale one object or let a bottom crop occur.
+   // The approved slider itself is the horizontal boundary. Both art frames
+   // must fit INSIDE its visual width; do not move or resize the slider/nav.
+   const deck=document.querySelector('.control-deck');
+   const deckRect=deck?.getBoundingClientRect();
+   const sliderLeft=deckRect?.left??rect.left+rect.width*.29;
+   const sliderRight=deckRect?.right??rect.left+rect.width*.71;
+   // Depth lift only: enlarge both art frames by up to 5% relative to the
+   // previously approved v18 composition. Reclaim spare side gutters rather
+   // than moving the slider, the navigation or any other scene component.
+   // The scale remains clamped when a very narrow viewport has less room.
+   const sceneUnit=rect.width/1440; // viewport-to-approved-scene uniform factor (1 at the locked 1440px view)
+   const previousMargin=Math.max(6*sceneUnit,Math.min(16*sceneUnit,rect.width*.009));
+   const previousGap=Math.max(7*sceneUnit,Math.min(13*sceneUnit,rect.width*.007));
+   const frameMargin=1*sceneUnit; // same approved 1px margin, scaled with the entire stage
+   const frameGap=1*sceneUnit; // same approved 1px gap, scaled with the entire stage
    const maxHeight=Math.max(axisH,tableH);
-   let fit=Math.min(1,Math.max(.40,(rect.height-12)/Math.max(1,maxHeight)));
-   // Dynamic columns can extend left; avoid clipping the value table on small
-   // viewports while retaining the approved full-size dimensions on desktop.
-   const leftLimit=rect.left+Math.min(6,rect.width*.008);
-   const available=tableRight-leftLimit;
-   if(tableW*fit>available)fit=Math.max(.35,Math.min(fit,available/Math.max(1,tableW)));
+   const sceneFit=Math.max(.1,(rect.height-12*sceneUnit)/Math.max(1,maxHeight));
+   const previousWidthAvailable=Math.max(1,sliderRight-sliderLeft-2*previousMargin-previousGap);
+   const previousFit=Math.min(1,previousWidthAvailable/Math.max(1,axisW+tableW),sceneFit);
+   const widthAvailable=Math.max(1,sliderRight-sliderLeft-2*frameMargin-frameGap);
+   // Keep the exact proportion and common baseline of v17, with a gentle
+   // forward visual effect applied to both elements as ONE group.
+   const fit=Math.min(1,previousFit*1.065,widthAvailable/Math.max(1,axisW+tableW),sceneFit);
    const finalAxisW=axisW*fit;
    const finalAxisH=finalAxisW*ART.axesAspect;
    const finalTableW=tableW*fit;
    const finalTableH=tableH*fit;
-   const actualAxisLeft=axisRight-finalAxisW;
-   const actualTableRight=actualAxisLeft;
+   const actualAxisRight=sliderRight-frameMargin;
+   const actualAxisLeft=actualAxisRight-finalAxisW;
+   const actualTableRight=actualAxisLeft-frameGap;
    const actualTableLeft=actualTableRight-finalTableW;
-   // If fitting was necessary, recompute the baseline against the bottom edge.
-   axesBottom=Math.min(axesBottom,rect.bottom-4);
-   tableBottom=Math.min(axesBottom-(ART.axesBottom-ART.tableBottom)*sx,rect.bottom-4);
-   const tableTop=tableBottom-finalTableH;
-   const axesTop=axesBottom-finalAxisH;
+   // Keep the two lower tips aligned immediately ABOVE the existing slider.
+   // A tiny proportional offset compensates for the distinct art frames.
+   let axesBottom=Math.min(rect.top+ART.axesBottom*sy,
+                           (deckRect?.top??rect.bottom)-Math.max(9*sceneUnit,rect.width*.005));
+   let tableBottom=axesBottom-(ART.axesBottom-ART.tableBottom)*sx*fit;
+   const approvedDropPx=9*sceneUnit; // retain the approved 9px at 1440; scale proportionally in fullscreen
+   const tableTop=tableBottom-finalTableH+approvedDropPx;
+   const axesTop=axesBottom-finalAxisH+approvedDropPx;
    // The table aspect ratio is obtained from its actual external asset.
    // Five-column appearance is preserved; when more columns are added the
    // existing value-table engine remains in control of horizontal expansion.
    const variables=[
      [axes,'--ma-width',((ART.axesRight-ART.axesLeft)/ART.refW*100*fit).toFixed(5)+'%'],
-     [axes,'--ma-right',((rect.right-axisRight)/unitX).toFixed(3)+'px'],
+     [axes,'--ma-right',((rect.right-actualAxisRight)/unitX).toFixed(3)+'px'],
      [axes,'--ma-top',((axesTop-rect.top)/unitY).toFixed(3)+'px'],
      [table,'--vt-right',((rect.right-actualTableRight)/unitX).toFixed(3)+'px'],
      [table,'--vt-top',((tableTop-rect.top)/unitY).toFixed(3)+'px'],
@@ -7947,7 +7947,7 @@ html:fullscreen #approvedMagicAxes:not(.ma-minimized){top:var(--ma-top)!importan
      [table,'--vt-height',((tableBaseUnscaledW/ART.tableShellAspect)/unitY).toFixed(3)+'px']
    ];
    // Preserve relative original centers for the pre-existing minimize action.
-   const miniWidth=172*.82;
+   const miniWidth=172*.82*sceneUnit;
    variables.push([axes,'--ma-mini-right',((rect.right-(actualAxisLeft+finalAxisW*.5+miniWidth*.5))/unitX).toFixed(3)+'px']);
    variables.push([table,'--vt-mini-right',((rect.right-(actualTableLeft+finalTableW*.5+miniWidth*.5))/unitX).toFixed(3)+'px']);
    // Avoid redundant layout writes on every ResizeObserver callback.
@@ -7975,8 +7975,105 @@ html:fullscreen #approvedMagicAxes:not(.ma-minimized){top:var(--ma-top)!importan
    table:table.getBoundingClientRect().toJSON(),
    axes:axes.getBoundingClientRect().toJSON(),
    navigation:document.getElementById('advancedPairedQuickNav')?.getBoundingClientRect().toJSON()||null,
-   reference:'2026-10-14 approved screenshot 2048x915'
+   reference:'original local master(10), slider-aligned v17 plus gentle 5 percent visual depth'
  })});
+})();
+</script>
+
+<!-- GITHUB PAGES TRIAL ONLY / 2026-10-15: responsive stage viewport adapter.
+     Keep original approved panel coordinates and engines unchanged.
+     This trial is not a replacement for the master until user approval. -->
+<style id="fk-trial-fixed-aspect-stage">
+  :root{--fk-scene-header:68px;--fk-scene-ratio:2.17194570136;}
+  @media(max-width:700px){:root{--fk-scene-header:54px;}}
+  body > main,
+  html:fullscreen body > main{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    width:100%!important;
+    height:calc(100dvh - var(--fk-scene-header))!important;
+    min-height:0!important;
+    max-width:none!important;
+    padding:0!important;
+    margin:0!important;
+    overflow:hidden!important;
+  }
+  /* Scale X and Y together by allowing the scene box only one aspect ratio.
+     The original image cover behavior is preserved at a CONSTANT crop ratio,
+     so none of the previously approved local artwork anchor points move. */
+  #ride,
+  html:fullscreen #ride{
+    flex:0 0 auto!important;
+    width:min(100vw,calc((100dvh - var(--fk-scene-header))*var(--fk-scene-ratio)))!important;
+    height:auto!important;
+    aspect-ratio:1440/663!important;
+    max-width:100vw!important;
+    max-height:calc(100dvh - var(--fk-scene-header))!important;
+    min-height:0!important;
+    margin:0!important;
+    overflow:hidden!important;
+  }
+  /* The slider/deck has an approved 48px height on the 1440px stage.
+     Its old fixed CSS pixel height stopped scaling with the artwork,
+     moving the approved table and axes (anchored above the deck). */
+  @media(min-width:901px){
+    #ride{container-type:inline-size;}
+    #ride .control-deck{height:3.333333cqw!important;}
+  }
+  /* Disable the legacy fullscreen-only lift that moved station machinery. */
+  html:fullscreen #leftMachine,
+  html:fullscreen #outputMachine{bottom:38%!important;}
+  #ride > .ride-art,
+  html:fullscreen #ride > .ride-art{
+    width:100%!important;
+    height:100%!important;
+    object-fit:cover!important;
+    object-position:center center!important;
+  }
+</style>
+<script id="fk-trial-quick-nav-stage-anchor">
+(()=>{
+  'use strict';
+  // The navigator is a fixed BODY child in the approved master rather than a
+  // scene child. Re-anchor it after letterboxing/fullscreen, using the SAME
+  // approved stage-relative point and a uniform visual scale.
+  const scene=document.getElementById('ride');
+  const nav=document.getElementById('advancedPairedQuickNav');
+  if(!scene||!nav)return;
+  const RX=0.6857638888888888, RY=0.7349759615384616;
+  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+  let raf=0;
+  function align(){
+    const r=scene.getBoundingClientRect();
+    if(r.width<=0||r.height<=0)return;
+    const scale=Math.min(r.width/1440,r.height/663);
+    const w=nav.offsetWidth*scale,h=nav.offsetHeight*scale;
+    const x=clamp(r.left+r.width*RX,0,Math.max(0,innerWidth-w));
+    const y=clamp(r.top+r.height*RY,0,Math.max(0,innerHeight-h));
+    nav.style.setProperty('position','fixed','important');
+    nav.style.setProperty('left',x.toFixed(3)+'px','important');
+    nav.style.setProperty('top',y.toFixed(3)+'px','important');
+    nav.style.setProperty('right','auto','important');
+    nav.style.setProperty('bottom','auto','important');
+    nav.style.setProperty('transform-origin','top left','important');
+    nav.style.setProperty('transform','scale('+scale.toFixed(6)+')','important');
+  }
+  function update(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;align();});}
+  align();
+  addEventListener('resize',update,{passive:true});
+  addEventListener('orientationchange',update,{passive:true});
+  addEventListener('load',update,{once:true});
+  document.addEventListener('fullscreenchange',()=>requestAnimationFrame(()=>requestAnimationFrame(update)));
+  if('ResizeObserver' in window)new ResizeObserver(update).observe(scene);
+  // Existing fullscreen exit logic calls this method; keep that path anchored.
+  if(window.__COMPOSITION_APPROVED_NAV__)window.__COMPOSITION_APPROVED_NAV__.apply=align;
+  window.FunkiStageViewportTrial=Object.freeze({refresh:update,read:()=>({
+    stage:scene.getBoundingClientRect().toJSON(),
+    table:document.getElementById('valueTablePanel')?.getBoundingClientRect().toJSON(),
+    axes:document.getElementById('approvedMagicAxes')?.getBoundingClientRect().toJSON(),
+    nav:nav.getBoundingClientRect().toJSON()
+  })});
 })();
 </script>
 </body></html>
